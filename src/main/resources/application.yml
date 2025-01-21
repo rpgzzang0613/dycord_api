@@ -2,6 +2,7 @@ spring:
   application:
     name: dycord_api
   profiles:
+#    active: env-group
     active: dev-group
     group:
       dev-group: dev, dev_secret
