@@ -21,12 +21,12 @@ public class Member {
 
     private String nickname;
 
-    @Column(nullable = false)
-    private boolean isDeleted;
-
     @CreatedDate
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
+
+    @Column(nullable = false)
+    private boolean isDeleted;
 
     private LocalDateTime deletedAt;
 
