@@ -1,4 +1,4 @@
-package kr.co.soymilk.dycord_api.member.dto;
+package kr.co.soymilk.dycord_api.member.dto.profile;
 
 import lombok.Builder;
 import lombok.Data;
