@@ -35,7 +35,30 @@ public class SecurityConfig {
     public UrlBasedCorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
         config.setAllowedHeaders(List.of("*"));
-        config.setAllowedOrigins(List.of("http://localhost:5173", "https://dycord.co.kr"));
+        config.setAllowedOrigins(List.of(
+                "http://localhost:3636",
+                "https://dycord.co.kr"
+        ));
+        config.setAllowedOriginPatterns(List.of(
+                "http://10.*.*.*:3636",
+                "http://172.16.*.*:3636",
+                "http://172.17.*.*:3636",
+                "http://172.18.*.*:3636",
+                "http://172.19.*.*:3636",
+                "http://172.20.*.*:3636",
+                "http://172.21.*.*:3636",
+                "http://172.22.*.*:3636",
+                "http://172.23.*.*:3636",
+                "http://172.24.*.*:3636",
+                "http://172.25.*.*:3636",
+                "http://172.26.*.*:3636",
+                "http://172.27.*.*:3636",
+                "http://172.28.*.*:3636",
+                "http://172.29.*.*:3636",
+                "http://172.30.*.*:3636",
+                "http://172.31.*.*:3636",
+                "http://192.168.*.*:3636"
+        ));
         config.setAllowedMethods(List.of("OPTIONS", "GET", "POST", "PUT", "DELETE"));
         config.setAllowCredentials(true);
 
