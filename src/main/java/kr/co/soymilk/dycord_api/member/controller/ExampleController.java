@@ -1,14 +1,19 @@
 package kr.co.soymilk.dycord_api.member.controller;
 
+import kr.co.soymilk.dycord_api.common.util.AesUtil;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
 
-@RestController
 @Slf4j
+@RequiredArgsConstructor
+@RestController
 public class ExampleController {
+
+    private final AesUtil aesUtil;
 
     @GetMapping("/test/get")
     public ResponseEntity<HashMap<String, Object>> getTest(@RequestParam HashMap<String, Object> paramObj) {
@@ -41,4 +46,15 @@ public class ExampleController {
         return ResponseEntity.ok(resultMap);
     }
 
+    @PostMapping("/test/encrypt")
+    public ResponseEntity<String> getEncryptTest(@RequestBody HashMap<String, String> body) {
+        return ResponseEntity.ok(aesUtil.encrypt(body.get("str")));
+    }
+
+    @PostMapping("/test/decrypt")
+    public ResponseEntity<String> getDecryptTest(@RequestBody HashMap<String, String> body) {
+        return ResponseEntity.ok(aesUtil.decrypt(body.get("str")));
+    }
+
 }
+
