@@ -1,6 +1,8 @@
 package kr.co.soymilk.dycord_api.common.util;
 
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import javax.crypto.Cipher;
@@ -15,7 +17,12 @@ import java.util.Base64;
 @Component
 public class AesUtil {
 
-    private final String SECRET_KEY = "testtesttesttest";
+    private final String SECRET_KEY;
+
+    @Autowired
+    public AesUtil(@Value("${aes.secret-key}") String secretKey) {
+        this.SECRET_KEY = secretKey;
+    }
 
     public String encrypt(String plainStr) {
         String resultStr = "";
