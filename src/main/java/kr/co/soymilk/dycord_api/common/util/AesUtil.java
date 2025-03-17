@@ -9,7 +9,7 @@ import javax.crypto.spec.SecretKeySpec;
 import java.nio.ByteBuffer;
 import java.security.SecureRandom;
 import java.util.Arrays;
-import java.util.HexFormat;
+import java.util.Base64;
 
 @Slf4j
 @Component
@@ -33,12 +33,12 @@ public class AesUtil {
             // 데이터 암호화
             byte[] encryptedByte = cipher.doFinal(plainStr.getBytes());
 
-            // IV와 암호화된 데이터를 합쳐서 Hex로 변환
+            // IV와 암호화된 데이터를 합쳐서 Base64 url safe 로 변환
             ByteBuffer byteBuffer = ByteBuffer.allocate(iv.length + encryptedByte.length);
             byteBuffer.put(iv);
             byteBuffer.put(encryptedByte);
 
-            resultStr =  HexFormat.of().formatHex(byteBuffer.array());
+            resultStr = Base64.getUrlEncoder().withoutPadding().encodeToString(byteBuffer.array());
         } catch (Exception e) {
             log.error("encrypt error: {}", e.getMessage());
             resultStr = "";
@@ -51,8 +51,8 @@ public class AesUtil {
         String plainStr;
 
         try {
-            // Hex 파싱 후 IV와 암호화된 데이터로 분리
-            byte[] ivAndDataByte = HexFormat.of().parseHex(encryptedStr);
+            // Base64 url safe 디코딩후 IV와 암호화된 데이터로 분리
+            byte[] ivAndDataByte = Base64.getUrlDecoder().decode(encryptedStr);
             byte[] iv = Arrays.copyOfRange(ivAndDataByte, 0, 16);
             byte[] encryptedByte = Arrays.copyOfRange(ivAndDataByte, 16, ivAndDataByte.length);
 
