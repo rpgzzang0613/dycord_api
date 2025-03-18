@@ -27,6 +27,7 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers("/test/**").permitAll()
+                        .requestMatchers("/auth/kakao", "/auth/naver").permitAll()
                         .anyRequest().authenticated()
                 );
 
