@@ -4,9 +4,12 @@ import jakarta.servlet.http.HttpServletRequest;
 import kr.co.soymilk.dycord_api.common.dto.ErrorResponseDto;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.HttpServerErrorException;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -14,6 +17,56 @@ import java.io.StringWriter;
 @ControllerAdvice
 @Slf4j
 public class GlobalExceptionHandler {
+
+    @ExceptionHandler({HttpClientErrorException.class, HttpServerErrorException.class})
+    public ResponseEntity<ErrorResponseDto> handleHttpStatusException(Exception e, HttpServletRequest request) {
+        HttpStatusCode statusCode;
+        String msg;
+        String body;
+
+        switch (e) {
+            case HttpClientErrorException clientError -> {
+                statusCode = clientError.getStatusCode();
+                msg = clientError.getMessage();
+                body = clientError.getResponseBodyAsString();
+            }
+            case HttpServerErrorException serverError -> {
+                statusCode = serverError.getStatusCode();
+                msg = serverError.getMessage();
+                body = serverError.getResponseBodyAsString();
+            }
+            default -> {
+                // 있을 수 없는 상황
+                statusCode = HttpStatus.INTERNAL_SERVER_ERROR;
+                msg = "알 수 없는 오류 발생";
+                body = "";
+            }
+        }
+
+        String clientIp = request.getHeader("X-FORWARDED-FOR");
+        if (clientIp == null) {
+            clientIp = request.getRemoteAddr();
+        }
+
+        String requestUri = request.getRequestURI();
+
+        log.error("\nClientIP - {} | RequestUrl - {} | StatusCode - {} | message - {} | body - {}", clientIp, requestUri, statusCode, msg, body);
+
+        ErrorResponseDto errorResDto = ErrorResponseDto.builder()
+                .message("StatusCode: " + statusCode + ", message: " + e.getMessage())
+                .build();
+
+        return new ResponseEntity<>(errorResDto, statusCode);
+    }
+
+    @ExceptionHandler({ErrorFromKakaoException.class, ErrorFromNaverException.class})
+    public ResponseEntity<ErrorResponseDto> handleSocialResponseErrorException(Exception e, HttpServletRequest request) {
+        ErrorResponseDto errorResDto = ErrorResponseDto.builder()
+                .message(e.getMessage())
+                .build();
+
+        return new ResponseEntity<>(errorResDto, HttpStatus.BAD_REQUEST);
+    }
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponseDto> handleGlobalException(Exception e, HttpServletRequest request) {

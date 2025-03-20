@@ -24,4 +24,12 @@ public class SocialController {
         socialService.processKakaoAuth(code, nonce);
     }
 
+    @PostMapping("/naver")
+    public void requestNaverAuth(@RequestBody HashMap<String, String> body) {
+        String code = body.get("code");
+        String state = body.get("state");
+
+        socialService.processNaverAuth(code, state);
+    }
+
 }
