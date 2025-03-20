@@ -2,13 +2,13 @@ package kr.co.soymilk.dycord_api.member.service;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import kr.co.soymilk.dycord_api.common.exception.ErrorFromNaverException;
 import kr.co.soymilk.dycord_api.common.util.JwtOIDCUtil;
-import kr.co.soymilk.dycord_api.member.dto.auth.KakaoErrorDto;
-import kr.co.soymilk.dycord_api.common.exception.ErrorFromKakaoException;
-import kr.co.soymilk.dycord_api.member.dto.auth.KakaoTokenDto;
-import kr.co.soymilk.dycord_api.member.dto.auth.NaverErrorDto;
-import kr.co.soymilk.dycord_api.member.dto.auth.NaverTokenDto;
+import kr.co.soymilk.dycord_api.member.dto.auth.social.kakao.KakaoErrorResponseDto;
+import kr.co.soymilk.dycord_api.member.dto.auth.social.kakao.KakaoTokenResponseDto;
+import kr.co.soymilk.dycord_api.member.dto.auth.social.naver.NaverErrorResponseDto;
+import kr.co.soymilk.dycord_api.member.dto.auth.social.naver.NaverProfileDto;
+import kr.co.soymilk.dycord_api.member.dto.auth.social.naver.NaverProfileResponseDto;
+import kr.co.soymilk.dycord_api.member.dto.auth.social.naver.NaverTokenResponseDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.env.Environment;
 import org.springframework.http.HttpStatusCode;
@@ -20,8 +20,6 @@ import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.RestClient;
 
-import java.nio.charset.StandardCharsets;
-
 @Service
 @RequiredArgsConstructor
 public class SocialService {
@@ -29,14 +27,15 @@ public class SocialService {
     private final RestClient restClient;
     private final JwtOIDCUtil jwtOIDCUtil;
     private final Environment env;
+    private final ProfileService profileService;
 
     public void processKakaoAuth(String code, String nonce) {
-        KakaoTokenDto kakaoTokenDto = requestKakaoTokenByCode(code);
+        KakaoTokenResponseDto kakaoTokenResDto = requestKakaoTokenByCode(code);
 
         // TODO id_token 검증 후 uid 뽑아내기
     }
 
-    private KakaoTokenDto requestKakaoTokenByCode(String code) {
+    private KakaoTokenResponseDto requestKakaoTokenByCode(String code) {
         MultiValueMap<String, String> requestMap = new LinkedMultiValueMap<>();
         requestMap.add("grant_type", "authorization_code");
         requestMap.add("client_id", env.getProperty("social.kakao.client_id"));
@@ -51,34 +50,31 @@ public class SocialService {
                 .body(requestMap)
                 .retrieve()
                 .onStatus(HttpStatusCode::isError, (request, response) -> {
-                    // 카카오는 자기네 에러코드 던질때 HttpStatus도 바꿔서 던지므로, HttpStatus가 200이라면 문제가 없다는 뜻
                     HttpStatusCode httpStatus = response.getStatusCode();
 
                     ObjectMapper objectMapper = new ObjectMapper();
-                    KakaoErrorDto kakaoErrorDto = objectMapper.readValue(response.getBody(), new TypeReference<>() {});
-
-                    // response body에 에러코드가 있다면 카카오와의 통신 자체는 문제가 없다는 의미
-                    boolean isErrorFromKakao = kakaoErrorDto.getError() != null && kakaoErrorDto.getError_code() != null && kakaoErrorDto.getError_description() != null;
-                    if (isErrorFromKakao) {
-                        throw new ErrorFromKakaoException(httpStatus.value(), kakaoErrorDto);
-                    }
+                    KakaoErrorResponseDto kakaoErrResDto = objectMapper.readValue(response.getBody(), new TypeReference<>() {});
 
                     if (httpStatus.is4xxClientError()) {
-                        throw new HttpClientErrorException(httpStatus, response.getStatusText());
+                        throw new HttpClientErrorException(httpStatus, kakaoErrResDto.toJsonString());
                     }
 
-                    throw new HttpServerErrorException(httpStatus, response.getStatusText());
+                    throw new HttpServerErrorException(httpStatus, kakaoErrResDto.toJsonString());
                 })
-                .body(KakaoTokenDto.class);
+                .body(KakaoTokenResponseDto.class);
     }
 
-    public void processNaverAuth(String code, String state) {
-        NaverTokenDto naverTokenDto = requestNaverTokenByCode(code, state);
+    public NaverProfileDto processNaverAuth(String code, String state) {
+        NaverTokenResponseDto naverTokenResDto = requestNaverTokenByCode(code, state);
+        NaverProfileResponseDto naverProfileResDto = requestNaverProfileByToken(naverTokenResDto.getAccess_token());
 
-        int a = 0;
+        String naverUid = naverProfileResDto.getResponse().getId();
+
+        // TODO DB에서 socialId 조회해서 가입유무 확인 후 가입 했으면 dycord 토큰 발급하도록 수정하기
+        return naverProfileResDto.getResponse();
     }
 
-    private NaverTokenDto requestNaverTokenByCode(String code, String state) {
+    private NaverTokenResponseDto requestNaverTokenByCode(String code, String state) {
         MultiValueMap<String, String> requestMap = new LinkedMultiValueMap<>();
         requestMap.add("grant_type", "authorization_code");
         requestMap.add("client_id", env.getProperty("social.naver.client_id"));
@@ -92,30 +88,79 @@ public class SocialService {
                 .accept(MediaType.APPLICATION_JSON)
                 .body(requestMap)
                 .exchange((request, response) -> {
-                    // 네이버는 자기네 에러코드 던질때 HttpStatus 200으로 던지므로, HttpStatus가 200이어도 에러코드에 따라 처리를 따로 해줘야함
-
                     HttpStatusCode httpStatus = response.getStatusCode();
-
-                    if (httpStatus.is4xxClientError()) {
-                        throw new HttpClientErrorException(httpStatus, response.getStatusText());
-                    }
-
-                    if (httpStatus.is5xxServerError()) {
-                        throw new HttpServerErrorException(httpStatus, response.getStatusText());
-                    }
-
                     ObjectMapper objectMapper = new ObjectMapper();
-                    NaverTokenDto tokenDto = objectMapper.readValue(response.getBody(), new TypeReference<>() {});
+                    NaverTokenResponseDto naverTokenResDto = objectMapper.readValue(response.getBody(), new TypeReference<>() {});
 
-                    if (tokenDto.getError() != null) {
-                        NaverErrorDto errorDto = new NaverErrorDto();
-                        errorDto.setError(tokenDto.getError());
-                        errorDto.setError_description(tokenDto.getError_description());
+                    if (httpStatus.isError()) {
+                        if (naverTokenResDto != null && naverTokenResDto.getError() != null) {
+                            // 네이버에서 에러를 반환한 경우
+                            NaverErrorResponseDto naverErrResDto = new NaverErrorResponseDto();
+                            naverErrResDto.setError(naverTokenResDto.getError());
+                            naverErrResDto.setError_description(naverTokenResDto.getError_description());
 
-                        throw new ErrorFromNaverException(httpStatus.value(), errorDto);
+                            if (httpStatus.is4xxClientError()) {
+                                throw new HttpClientErrorException(httpStatus, naverErrResDto.toJsonString());
+                            } else {
+                                throw new HttpServerErrorException(httpStatus, naverErrResDto.toJsonString());
+                            }
+
+                        } else {
+                            // 예기치 못한 에러일때
+                            if (httpStatus.is4xxClientError()) {
+                                throw new HttpClientErrorException(httpStatus, response.getStatusText());
+                            } else {
+                                throw new HttpServerErrorException(httpStatus, response.getStatusText());
+                            }
+                        }
                     }
 
-                    return tokenDto;
+                    if (naverTokenResDto.getError() != null) {
+                        // HttpStatus는 200이지만 네이버에서 에러를 반환한 경우
+                        NaverErrorResponseDto naverErrResDto = new NaverErrorResponseDto();
+                        naverErrResDto.setError(naverTokenResDto.getError());
+                        naverErrResDto.setError_description(naverTokenResDto.getError_description());
+                        throw new HttpClientErrorException(httpStatus, naverErrResDto.toJsonString());
+                    }
+
+                    return naverTokenResDto;
+                });
+    }
+
+    private NaverProfileResponseDto requestNaverProfileByToken(String accessToken) {
+        return restClient.get()
+                .uri("https://openapi.naver.com/v1/nid/me")
+                .header("Authorization", "Bearer " + accessToken)
+                .accept(MediaType.APPLICATION_JSON)
+                .exchange((request, response) -> {
+                    HttpStatusCode httpStatus = response.getStatusCode();
+                    ObjectMapper objectMapper = new ObjectMapper();
+                    NaverProfileResponseDto naverProfileResDto = objectMapper.readValue(response.getBody(), new TypeReference<>() {});
+
+                    if (httpStatus.isError()) {
+                        if (naverProfileResDto != null && !"00".equals(naverProfileResDto.getResultcode())) {
+                            // 네이버에서 에러를 반환한 경우
+                            NaverErrorResponseDto naverErrResDto = new NaverErrorResponseDto();
+                            naverErrResDto.setError(naverProfileResDto.getResultcode());
+                            naverErrResDto.setError_description(naverProfileResDto.getMessage());
+
+                            if (httpStatus.is4xxClientError()) {
+                                throw new HttpClientErrorException(httpStatus, naverErrResDto.toJsonString());
+                            } else {
+                                throw new HttpServerErrorException(httpStatus, naverErrResDto.toJsonString());
+                            }
+
+                        } else {
+                            // 예기치 못한 에러일때
+                            if (httpStatus.is4xxClientError()) {
+                                throw new HttpClientErrorException(httpStatus, response.getStatusText());
+                            } else {
+                                throw new HttpServerErrorException(httpStatus, response.getStatusText());
+                            }
+                        }
+                    }
+
+                    return naverProfileResDto;
                 });
     }
 

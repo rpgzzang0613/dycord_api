@@ -22,24 +22,20 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponseDto> handleHttpStatusException(Exception e, HttpServletRequest request) {
         HttpStatusCode statusCode;
         String msg;
-        String body;
 
         switch (e) {
             case HttpClientErrorException clientError -> {
                 statusCode = clientError.getStatusCode();
                 msg = clientError.getMessage();
-                body = clientError.getResponseBodyAsString();
             }
             case HttpServerErrorException serverError -> {
                 statusCode = serverError.getStatusCode();
                 msg = serverError.getMessage();
-                body = serverError.getResponseBodyAsString();
             }
             default -> {
                 // 있을 수 없는 상황
                 statusCode = HttpStatus.INTERNAL_SERVER_ERROR;
                 msg = "알 수 없는 오류 발생";
-                body = "";
             }
         }
 
@@ -50,22 +46,13 @@ public class GlobalExceptionHandler {
 
         String requestUri = request.getRequestURI();
 
-        log.error("\nClientIP - {} | RequestUrl - {} | StatusCode - {} | message - {} | body - {}", clientIp, requestUri, statusCode, msg, body);
+        log.error("\nClientIP - {} | RequestUrl - {} | StatusCode - {} | message - {}", clientIp, requestUri, statusCode, msg);
 
         ErrorResponseDto errorResDto = ErrorResponseDto.builder()
                 .message("StatusCode: " + statusCode + ", message: " + e.getMessage())
                 .build();
 
         return new ResponseEntity<>(errorResDto, statusCode);
-    }
-
-    @ExceptionHandler({ErrorFromKakaoException.class, ErrorFromNaverException.class})
-    public ResponseEntity<ErrorResponseDto> handleSocialResponseErrorException(Exception e, HttpServletRequest request) {
-        ErrorResponseDto errorResDto = ErrorResponseDto.builder()
-                .message(e.getMessage())
-                .build();
-
-        return new ResponseEntity<>(errorResDto, HttpStatus.BAD_REQUEST);
     }
 
     @ExceptionHandler(Exception.class)

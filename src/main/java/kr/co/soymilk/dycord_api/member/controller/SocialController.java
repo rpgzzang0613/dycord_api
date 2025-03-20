@@ -1,7 +1,9 @@
 package kr.co.soymilk.dycord_api.member.controller;
 
+import kr.co.soymilk.dycord_api.member.dto.auth.social.naver.NaverProfileDto;
 import kr.co.soymilk.dycord_api.member.service.SocialService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -25,11 +27,13 @@ public class SocialController {
     }
 
     @PostMapping("/naver")
-    public void requestNaverAuth(@RequestBody HashMap<String, String> body) {
+    public ResponseEntity<NaverProfileDto> requestNaverAuth(@RequestBody HashMap<String, String> body) {
         String code = body.get("code");
         String state = body.get("state");
 
-        socialService.processNaverAuth(code, state);
+        NaverProfileDto naverProfileDto = socialService.processNaverAuth(code, state);
+
+        return ResponseEntity.ok(naverProfileDto);
     }
 
 }
