@@ -20,21 +20,21 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler({HttpClientErrorException.class, HttpServerErrorException.class})
     public ResponseEntity<ErrorResponseDto> handleHttpStatusException(Exception e, HttpServletRequest request) {
-        HttpStatusCode statusCode;
+        HttpStatusCode httpStatusCode;
         String msg;
 
         switch (e) {
             case HttpClientErrorException clientError -> {
-                statusCode = clientError.getStatusCode();
+                httpStatusCode = clientError.getStatusCode();
                 msg = clientError.getMessage();
             }
             case HttpServerErrorException serverError -> {
-                statusCode = serverError.getStatusCode();
+                httpStatusCode = serverError.getStatusCode();
                 msg = serverError.getMessage();
             }
             default -> {
                 // 있을 수 없는 상황
-                statusCode = HttpStatus.INTERNAL_SERVER_ERROR;
+                httpStatusCode = HttpStatus.INTERNAL_SERVER_ERROR;
                 msg = "알 수 없는 오류 발생";
             }
         }
@@ -46,13 +46,13 @@ public class GlobalExceptionHandler {
 
         String requestUri = request.getRequestURI();
 
-        log.error("\nClientIP - {} | RequestUrl - {} | StatusCode - {} | message - {}", clientIp, requestUri, statusCode, msg);
+        log.error("\nClientIP - {} | RequestUrl - {} | StatusCode - {} | message - {}", clientIp, requestUri, httpStatusCode, msg);
 
         ErrorResponseDto errorResDto = ErrorResponseDto.builder()
-                .message("StatusCode: " + statusCode + ", message: " + e.getMessage())
+                .message("StatusCode: " + httpStatusCode + ", message: " + e.getMessage())
                 .build();
 
-        return new ResponseEntity<>(errorResDto, statusCode);
+        return new ResponseEntity<>(errorResDto, httpStatusCode);
     }
 
     @ExceptionHandler(Exception.class)

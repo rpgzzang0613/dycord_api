@@ -1,5 +1,6 @@
 package kr.co.soymilk.dycord_api.member.controller;
 
+import kr.co.soymilk.dycord_api.member.dto.auth.social.kakao.KakaoProfileDto;
 import kr.co.soymilk.dycord_api.member.dto.auth.social.naver.NaverProfileDto;
 import kr.co.soymilk.dycord_api.member.service.SocialService;
 import lombok.RequiredArgsConstructor;
@@ -19,11 +20,13 @@ public class SocialController {
     private final SocialService socialService;
 
     @PostMapping("/kakao")
-    public void requestKakaoAuth(@RequestBody HashMap<String, String> body) {
+    public ResponseEntity<KakaoProfileDto> requestKakaoAuth(@RequestBody HashMap<String, String> body) {
         String code = body.get("code");
         String nonce = body.get("nonce");
 
-        socialService.processKakaoAuth(code, nonce);
+        KakaoProfileDto kakaoProfileDto = socialService.processKakaoAuth(code, nonce);
+
+        return ResponseEntity.ok(kakaoProfileDto);
     }
 
     @PostMapping("/naver")
