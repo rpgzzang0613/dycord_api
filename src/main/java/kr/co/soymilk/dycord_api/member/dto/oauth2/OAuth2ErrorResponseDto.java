@@ -1,17 +1,21 @@
-package kr.co.soymilk.dycord_api.member.dto.auth.social.naver;
+package kr.co.soymilk.dycord_api.member.dto.oauth2;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.Data;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.Setter;
 
-@Data
+@Getter
+@Setter
+@Builder
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class NaverProfileResponseDto {
+public class OAuth2ErrorResponseDto {
 
-    private String resultcode;
-    private String message;
-    private NaverProfileDto response;
+    private String error;
+    private String error_code;
+    private String error_description;
 
     public String toJsonString() {
         try {

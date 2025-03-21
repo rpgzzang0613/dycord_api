@@ -1,20 +1,27 @@
-package kr.co.soymilk.dycord_api.member.dto.auth.social.kakao;
+package kr.co.soymilk.dycord_api.member.dto.oauth2;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.Builder;
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 
-@Data
+@Getter
+@Setter
 @Builder
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class KakaoProfileDto {
+public class OAuth2ProfileDto {
 
     private String id;
     private String nickname;
     private String picture;
     private String email;
+    private Boolean email_verified;
+    private String family_name;
+    private String given_name;
+    private String name;
+    private String profile;
 
     public String toJsonString() {
         try {

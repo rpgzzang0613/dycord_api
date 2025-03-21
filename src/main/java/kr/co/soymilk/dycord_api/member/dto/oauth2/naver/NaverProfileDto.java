@@ -1,21 +1,26 @@
-package kr.co.soymilk.dycord_api.member.dto.auth.social.kakao;
+package kr.co.soymilk.dycord_api.member.dto.oauth2.naver;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 
-@Data
+@Getter
+@Setter
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class KakaoTokenResponseDto {
+public class NaverProfileDto {
 
-    private String token_type;
-    private String access_token;
-    private Long expires_in;
-    private String refresh_token;
-    private Long refresh_token_expires_in;
-    private String id_token;
-    private String scope;
+    private String id;
+    private String nickname;
+    private String name;
+    private String email;
+    private String gender;
+    private String age;
+    private String birthday;
+    private String profile_image;
+    private String birthyear;
+    private String mobile;
 
     public String toJsonString() {
         try {

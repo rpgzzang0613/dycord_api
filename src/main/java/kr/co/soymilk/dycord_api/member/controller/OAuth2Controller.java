@@ -1,8 +1,8 @@
 package kr.co.soymilk.dycord_api.member.controller;
 
-import kr.co.soymilk.dycord_api.member.dto.auth.social.kakao.KakaoProfileDto;
-import kr.co.soymilk.dycord_api.member.dto.auth.social.naver.NaverProfileDto;
-import kr.co.soymilk.dycord_api.member.service.SocialService;
+import kr.co.soymilk.dycord_api.member.dto.oauth2.OAuth2ProfileDto;
+import kr.co.soymilk.dycord_api.member.dto.oauth2.naver.NaverProfileDto;
+import kr.co.soymilk.dycord_api.member.service.OAuth2Service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -15,18 +15,19 @@ import java.util.HashMap;
 @RestController
 @RequestMapping("/auth")
 @RequiredArgsConstructor
-public class SocialController {
+public class OAuth2Controller {
 
-    private final SocialService socialService;
+    private final OAuth2Service OAuth2Service;
 
-    @PostMapping("/kakao")
-    public ResponseEntity<KakaoProfileDto> requestKakaoAuth(@RequestBody HashMap<String, String> body) {
+    @PostMapping("/oidc")
+    public ResponseEntity<OAuth2ProfileDto> requestGoogleAuth(@RequestBody HashMap<String, String> body) {
         String code = body.get("code");
         String nonce = body.get("nonce");
+        String platform = body.get("platform");
 
-        KakaoProfileDto kakaoProfileDto = socialService.processKakaoAuth(code, nonce);
+        OAuth2ProfileDto profileDto = OAuth2Service.processOIDCAuth(code, nonce, platform);
 
-        return ResponseEntity.ok(kakaoProfileDto);
+        return ResponseEntity.ok(profileDto);
     }
 
     @PostMapping("/naver")
@@ -34,7 +35,7 @@ public class SocialController {
         String code = body.get("code");
         String state = body.get("state");
 
-        NaverProfileDto naverProfileDto = socialService.processNaverAuth(code, state);
+        NaverProfileDto naverProfileDto = OAuth2Service.processNaverAuth(code, state);
 
         return ResponseEntity.ok(naverProfileDto);
     }
