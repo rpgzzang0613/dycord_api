@@ -1,15 +1,13 @@
 package kr.co.soymilk.dycord_api.member.dto.oauth2.naver;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.Getter;
 import lombok.Setter;
 
 @Getter
 @Setter
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class NaverProfileDto {
+public class NaverProfile {
 
     private String id;
     private String nickname;
@@ -21,13 +19,5 @@ public class NaverProfileDto {
     private String profile_image;
     private String birthyear;
     private String mobile;
-
-    public String toJsonString() {
-        try {
-            return new ObjectMapper().writeValueAsString(this);
-        } catch (JsonProcessingException e) {
-            return super.toString();
-        }
-    }
 
 }

@@ -3,8 +3,7 @@ package kr.co.soymilk.dycord_api.member.util;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
-import kr.co.soymilk.dycord_api.member.dto.oauth2.*;
-import kr.co.soymilk.dycord_api.member.dto.oauth2.OIDCKeysResponseDto;
+import kr.co.soymilk.dycord_api.member.dto.oauth2.oidc.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.env.Environment;
@@ -34,7 +33,7 @@ public class OIDCUtil {
     private final RestClient restClient;
     private final Environment env;
 
-    public String getJwksUri(String platform) {
+    public String requestJwksUri(String platform) {
         String path = "/.well-known/openid-configuration";
 
         String uri = switch (platform) {
@@ -43,13 +42,13 @@ public class OIDCUtil {
             default -> throw new IllegalStateException("Unexpected platform: " + platform);
         };
 
-        OIDCMetaDataDto metaDto = restClient.get()
+        OIDCMetaData metaDto = restClient.get()
                 .uri(uri)
                 .retrieve()
                 .onStatus(HttpStatusCode::isError, ((request, response) -> {
                     throw new HttpServerErrorException(response.getStatusCode(), "Cannot get jwks_uri");
                 }))
-                .body(OIDCMetaDataDto.class);
+                .body(OIDCMetaData.class);
 
         if (metaDto == null) {
             throw new HttpServerErrorException(HttpStatus.INTERNAL_SERVER_ERROR, "Cannot get jwks_uri");
@@ -59,8 +58,8 @@ public class OIDCUtil {
     }
 
     // TODO 매번 조회하지 말고 캐싱해두도록 변경하기
-    public List<OIDCPublicKey> getOIDCPublicKeys(String jwksUri) {
-        OIDCKeysResponseDto oidcResDto = restClient.get()
+    public List<OIDCJwk> requestJwks(String jwksUri) {
+        OIDCJwksResponse oidcResDto = restClient.get()
                 .uri(jwksUri)
                 .accept(MediaType.APPLICATION_JSON)
                 .retrieve()
@@ -75,7 +74,7 @@ public class OIDCUtil {
                         throw new HttpServerErrorException(httpStatusCode, bodyStr.isEmpty() ? response.getStatusText() : bodyStr);
                     }
                 })
-                .body(OIDCKeysResponseDto.class);
+                .body(OIDCJwksResponse.class);
 
         if (oidcResDto == null || oidcResDto.getKeys() == null) {
             throw new HttpServerErrorException(HttpStatus.INTERNAL_SERVER_ERROR, "OIDC Keys 조회 실패");
@@ -84,37 +83,7 @@ public class OIDCUtil {
         return oidcResDto.getKeys();
     }
 
-    public OAuth2ProfileDto getPayloadFromIdToken(String idToken, String nonce, String platform) {
-        String[] tokenArr = idToken.split("\\.");
-        String header = tokenArr[0];
-        String payload = tokenArr[1];
-
-        boolean isValidPayload = validatePayload(payload, nonce, platform);
-        if (!isValidPayload) {
-            return null;
-        }
-
-        String jwksUri = getJwksUri(platform);
-
-        List<OIDCPublicKey> publicKeys = getOIDCPublicKeys(jwksUri);
-
-        OIDCPublicKey oidcPublicKey = filterOIDCKey(header, publicKeys);
-        if (oidcPublicKey == null) {
-            return null;
-        }
-
-        Claims verifiedPayload = parsePayloadFromVerifiedIdToken(idToken, oidcPublicKey);
-
-        if (verifiedPayload == null || verifiedPayload.getSubject() == null) {
-            return null;
-        }
-
-        return OAuth2ProfileDto.builder()
-                .id(verifiedPayload.getSubject())
-                .build();
-    }
-
-    public boolean validatePayload(String payload, String nonce, String platform) {
+    public boolean validateUnsignedPayload(String payload, String nonce, String platform) {
         byte[] decodedBytes = Base64.getUrlDecoder().decode(payload);
         ObjectMapper objectMapper = new ObjectMapper();
         IdTokenPayload idTokenPayload;
@@ -148,7 +117,7 @@ public class OIDCUtil {
         return isValidIss && isValidAud && isValidExp && isValidNonce;
     }
 
-    public OIDCPublicKey filterOIDCKey(String header, List<OIDCPublicKey> oidcKeys) {
+    public OIDCJwk filterJwk(String header, List<OIDCJwk> oidcKeys) {
 
         IdTokenHeader idTokenHeader = parseIdTokenHeader(header);
         if (idTokenHeader == null) {
@@ -175,8 +144,8 @@ public class OIDCUtil {
         return idTokenHeader;
     }
 
-    public Claims parsePayloadFromVerifiedIdToken(String idToken, OIDCPublicKey oidcPublicKey) {
-        PublicKey publicKey = generatePublicKey(oidcPublicKey);
+    public Claims parsePayloadFromVerifiedIdToken(String idToken, OIDCJwk jwk) {
+        PublicKey publicKey = generatePublicKey(jwk);
 
         Claims payload;
         try {
@@ -192,7 +161,7 @@ public class OIDCUtil {
         return payload;
     }
 
-    private PublicKey generatePublicKey(OIDCPublicKey publicKey) {
+    private PublicKey generatePublicKey(OIDCJwk publicKey) {
         byte[] nBytes = Base64.getUrlDecoder().decode(publicKey.getN());
         byte[] eBytes = Base64.getUrlDecoder().decode(publicKey.getE());
 

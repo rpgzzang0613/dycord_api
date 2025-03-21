@@ -1,14 +1,14 @@
 package kr.co.soymilk.dycord_api.member.service;
 
-import kr.co.soymilk.dycord_api.member.dto.oauth2.OAuth2ProfileDto;
-import kr.co.soymilk.dycord_api.member.dto.oauth2.OAuth2TokenResponseDto;
-import kr.co.soymilk.dycord_api.member.dto.oauth2.OIDCTokenResponseDto;
-import kr.co.soymilk.dycord_api.member.dto.oauth2.google.GoogleTokenResponseDto;
-import kr.co.soymilk.dycord_api.member.dto.oauth2.kakao.KakaoTokenResponseDto;
-import kr.co.soymilk.dycord_api.member.dto.oauth2.naver.NaverProfileDto;
-import kr.co.soymilk.dycord_api.member.dto.oauth2.naver.NaverProfileResponseDto;
-import kr.co.soymilk.dycord_api.member.dto.oauth2.naver.NaverTokenResponseDto;
-import kr.co.soymilk.dycord_api.member.util.OIDCUtil;
+import kr.co.soymilk.dycord_api.member.dto.oauth2.naver.NaverAuthRequest;
+import kr.co.soymilk.dycord_api.member.dto.oauth2.oidc.OIDCAuthRequest;
+import kr.co.soymilk.dycord_api.member.dto.oauth2.oidc.OIDCProfile;
+import kr.co.soymilk.dycord_api.member.dto.oauth2.oidc.OIDCTokenResponse;
+import kr.co.soymilk.dycord_api.member.dto.oauth2.naver.NaverProfile;
+import kr.co.soymilk.dycord_api.member.dto.oauth2.naver.NaverProfileResponse;
+import kr.co.soymilk.dycord_api.member.dto.oauth2.naver.NaverTokenResponse;
+import kr.co.soymilk.dycord_api.member.util.OAuth2ProfileProvider;
+import kr.co.soymilk.dycord_api.member.util.OAuth2TokenProvider;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -16,33 +16,31 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class OAuth2Service {
 
-    private final GoogleOAuth2Service googleOAuth2Service;
-    private final KakaoOAuth2Service kakaoOAuth2Service;
-    private final NaverOAuth2Service naverOAuth2Service;
-    private final OIDCUtil oidcUtil;
+    private final OAuth2TokenProvider oAuth2TokenProvider;
+    private final OAuth2ProfileProvider oAuth2ProfileProvider;
 
-    public OAuth2ProfileDto processOIDCAuth(String code, String nonce, String platform) {
-        OIDCTokenResponseDto tokenResDto = platform.equals("kakao") ? kakaoOAuth2Service.requestKakaoTokenByCode(code) : googleOAuth2Service.requestGoogleTokenByCode(code);
-        OAuth2ProfileDto profileDto = oidcUtil.getPayloadFromIdToken(tokenResDto.getId_token(), nonce, platform);
+    public OIDCProfile processOIDCAuth(OIDCAuthRequest request) {
+        OIDCTokenResponse tokenRes = oAuth2TokenProvider.requestOAuth2TokenByCode(request.getCode(), request.getPlatform());
+        OIDCProfile profile = oAuth2ProfileProvider.getProfileFromIdToken(tokenRes.getId_token(), request.getNonce(), request.getPlatform());
 
-        if (profileDto == null) {
+        if (profile == null) {
             return null;
         }
 
-        String socialUid = profileDto.getId();
+        String socialUid = profile.getId();
 
         // TODO DB에서 social id 조회해서 가입유무 확인 후 가입했으면 dycord 토큰 발급하도록 수정하기
-        return profileDto;
+        return profile;
     }
 
-    public NaverProfileDto processNaverAuth(String code, String state) {
-        NaverTokenResponseDto naverTokenResDto = naverOAuth2Service.requestNaverTokenByCode(code, state);
-        NaverProfileResponseDto naverProfileResDto = naverOAuth2Service.requestNaverProfileByToken(naverTokenResDto.getAccess_token());
+    public NaverProfile processNaverAuth(NaverAuthRequest request) {
+        NaverTokenResponse tokenRes = oAuth2TokenProvider.requestNaverTokenByCode(request);
+        NaverProfileResponse profileRes = oAuth2ProfileProvider.requestNaverProfileByToken(tokenRes.getAccess_token());
 
-        String naverUid = naverProfileResDto.getResponse().getId();
+        String naverUid = profileRes.getResponse().getId();
 
         // TODO DB에서 social id 조회해서 가입유무 확인 후 가입했으면 dycord 토큰 발급하도록 수정하기
-        return naverProfileResDto.getResponse();
+        return profileRes.getResponse();
     }
 
 }
