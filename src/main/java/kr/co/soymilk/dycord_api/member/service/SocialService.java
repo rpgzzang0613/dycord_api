@@ -100,10 +100,6 @@ public class SocialService {
             return null;
         }
 
-        String a = verifiedPayload.getId();
-        String b = verifiedPayload.getSubject();
-        String c = verifiedPayload.getIssuer();
-
         return KakaoProfileDto.builder()
                 .id(verifiedPayload.getSubject())
                 .build();

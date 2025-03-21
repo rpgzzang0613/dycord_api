@@ -49,7 +49,7 @@ public class GlobalExceptionHandler {
         log.error("\nClientIP - {} | RequestUrl - {} | StatusCode - {} | message - {}", clientIp, requestUri, httpStatusCode, msg);
 
         ErrorResponseDto errorResDto = ErrorResponseDto.builder()
-                .message("StatusCode: " + httpStatusCode + ", message: " + e.getMessage())
+                .message("StatusCode: " + httpStatusCode + ", message: " + msg)
                 .build();
 
         return new ResponseEntity<>(errorResDto, httpStatusCode);
