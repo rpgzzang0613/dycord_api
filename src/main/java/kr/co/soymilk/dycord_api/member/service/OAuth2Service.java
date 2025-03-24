@@ -20,7 +20,7 @@ public class OAuth2Service {
     private final OAuth2ProfileProvider oAuth2ProfileProvider;
 
     public OIDCProfile processOIDCAuth(OIDCAuthRequest request) {
-        OIDCTokenResponse tokenRes = oAuth2TokenProvider.requestOAuth2TokenByCode(request.getCode(), request.getPlatform());
+        OIDCTokenResponse tokenRes = oAuth2TokenProvider.requestOAuth2TokenByCode(request);
         OIDCProfile profile = oAuth2ProfileProvider.getProfileFromIdToken(tokenRes.getId_token(), request.getNonce(), request.getPlatform());
 
         if (profile == null) {

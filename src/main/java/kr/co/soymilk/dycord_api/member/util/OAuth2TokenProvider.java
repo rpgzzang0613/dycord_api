@@ -7,6 +7,7 @@ import kr.co.soymilk.dycord_api.member.dto.oauth2.naver.NaverAuthRequest;
 import kr.co.soymilk.dycord_api.member.dto.oauth2.naver.NaverTokenResponse;
 import kr.co.soymilk.dycord_api.member.dto.oauth2.oidc.GoogleTokenResponse;
 import kr.co.soymilk.dycord_api.member.dto.oauth2.oidc.KakaoTokenResponse;
+import kr.co.soymilk.dycord_api.member.dto.oauth2.oidc.OIDCAuthRequest;
 import kr.co.soymilk.dycord_api.member.dto.oauth2.oidc.OIDCTokenResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -28,16 +29,16 @@ public class OAuth2TokenProvider {
     private final RestClient restClient;
     private final Environment env;
 
-    public OIDCTokenResponse requestOAuth2TokenByCode(String code, String platform) {
-        MultiValueMap<String, String> requestMap = getCommonRequestBody(code, platform);
-        requestMap.add("redirect_uri", env.getProperty("social." + platform + ".redirect_uri"));
+    public OIDCTokenResponse requestOAuth2TokenByCode(OIDCAuthRequest authRequest) {
+        MultiValueMap<String, String> requestMap = getCommonRequestBody(authRequest.getCode(), authRequest.getPlatform());
+        requestMap.add("redirect_uri", env.getProperty("social." + authRequest.getPlatform() + ".redirect_uri"));
 
-        String requestUri = getRequestUri(platform);
+        String requestUri = getRequestUri(authRequest.getPlatform());
 
-        Class<? extends OIDCTokenResponse> responseClass = switch (platform) {
+        Class<? extends OIDCTokenResponse> responseClass = switch (authRequest.getPlatform()) {
             case "google" -> GoogleTokenResponse.class;
             case "kakao" -> KakaoTokenResponse.class;
-            default -> throw new IllegalArgumentException("Unsupported platform: " + platform);
+            default -> throw new IllegalArgumentException("Unsupported platform: " + authRequest.getPlatform());
         };
 
         return restClient.post()
