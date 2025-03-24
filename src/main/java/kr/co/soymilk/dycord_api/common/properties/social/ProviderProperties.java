@@ -1,4 +1,4 @@
-package kr.co.soymilk.dycord_api.member.property.social;
+package kr.co.soymilk.dycord_api.common.properties.social;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Getter;

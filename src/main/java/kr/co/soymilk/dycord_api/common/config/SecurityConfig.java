@@ -1,5 +1,7 @@
 package kr.co.soymilk.dycord_api.common.config;
 
+import kr.co.soymilk.dycord_api.common.properties.EndpointProperties;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -14,10 +16,21 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.List;
 
+/**
+ * 스프링 시큐리티 설정
+ */
 @Configuration
 @EnableWebSecurity
+@RequiredArgsConstructor
 public class SecurityConfig {
 
+    private final EndpointProperties endpointProperties;
+
+    /**
+     * 액세스토큰을 사용하므로 폼로그인 비활성화, session stateless, stateless이므로 csrf disable
+     * 휴대폰에서 테스트할때 대비 사설대역 cors 허용
+     * 특정 엔드포인트를 제외하고는 인증없이 접근 못하도록 설정
+     */
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
@@ -26,8 +39,7 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(authorize -> authorize
-                        .requestMatchers("/test/**").permitAll()
-                        .requestMatchers("/auth/oidc", "/auth/naver").permitAll()
+                        .requestMatchers(endpointProperties.getPermitAll().toArray(new String[0])).permitAll()
                         .anyRequest().authenticated()
                 );
 

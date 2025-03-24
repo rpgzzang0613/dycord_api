@@ -1,8 +1,8 @@
 package kr.co.soymilk.dycord_api.member.util;
 
-import kr.co.soymilk.dycord_api.member.property.social.OidcProperties;
-import kr.co.soymilk.dycord_api.member.property.social.ProviderProperties;
-import kr.co.soymilk.dycord_api.member.property.social.SocialProperties;
+import kr.co.soymilk.dycord_api.common.properties.social.OidcProperties;
+import kr.co.soymilk.dycord_api.common.properties.social.ProviderProperties;
+import kr.co.soymilk.dycord_api.common.properties.social.SocialProperties;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 

@@ -11,6 +11,9 @@ import org.springframework.web.client.RestClient;
 
 import java.util.concurrent.TimeUnit;
 
+/**
+ * Http Rest 요청을 위한 객체인 RestClient 설정 (RestTemplate 과 같은 용도)
+ */
 @Slf4j
 @Configuration
 public class RestClientConfig {
@@ -20,6 +23,7 @@ public class RestClientConfig {
 
     @Bean
     public RestClient restClient(HttpClient httpClient) {
+        // SimpleClientRequestFactory를 사용할 경우 HttpStatus가 200이 아닐때 response body를 못읽음
         return RestClient.builder()
                 .requestFactory(new HttpComponentsClientHttpRequestFactory(httpClient))
                 .build();
