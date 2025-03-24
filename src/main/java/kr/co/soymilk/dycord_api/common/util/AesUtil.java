@@ -1,8 +1,8 @@
 package kr.co.soymilk.dycord_api.common.util;
 
+import kr.co.soymilk.dycord_api.common.properties.AesProperties;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import javax.crypto.Cipher;
@@ -15,14 +15,10 @@ import java.util.Base64;
 
 @Slf4j
 @Component
+@RequiredArgsConstructor
 public class AesUtil {
 
-    private final String SECRET_KEY;
-
-    @Autowired
-    public AesUtil(@Value("${aes.secret-key}") String secretKey) {
-        this.SECRET_KEY = secretKey;
-    }
+    private final AesProperties aesProperties;
 
     public String encrypt(String plainStr) {
         String resultStr = "";
@@ -32,7 +28,7 @@ public class AesUtil {
             byte[] iv = new SecureRandom().generateSeed(16);
             IvParameterSpec ivSpec = new IvParameterSpec(iv);
 
-            SecretKeySpec keySpec = new SecretKeySpec(SECRET_KEY.getBytes(), "AES");
+            SecretKeySpec keySpec = new SecretKeySpec(aesProperties.getSecretKey().getBytes(), "AES");
 
             Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
             cipher.init(Cipher.ENCRYPT_MODE, keySpec, ivSpec);
@@ -64,7 +60,7 @@ public class AesUtil {
             byte[] encryptedByte = Arrays.copyOfRange(ivAndDataByte, 16, ivAndDataByte.length);
 
             IvParameterSpec ivSpec = new IvParameterSpec(iv);
-            SecretKeySpec keySpec = new SecretKeySpec(SECRET_KEY.getBytes(), "AES");
+            SecretKeySpec keySpec = new SecretKeySpec(aesProperties.getSecretKey().getBytes(), "AES");
             Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
 
             cipher.init(Cipher.DECRYPT_MODE, keySpec, ivSpec);
