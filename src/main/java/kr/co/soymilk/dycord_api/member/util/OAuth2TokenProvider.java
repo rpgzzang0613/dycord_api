@@ -11,7 +11,6 @@ import kr.co.soymilk.dycord_api.member.dto.oauth2.oidc.OIDCAuthRequest;
 import kr.co.soymilk.dycord_api.member.dto.oauth2.oidc.OIDCTokenResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.core.env.Environment;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
@@ -27,21 +26,14 @@ import org.springframework.web.client.RestClient;
 public class OAuth2TokenProvider {
 
     private final RestClient restClient;
-    private final Environment env;
+    private final SocialInfoProvider socialInfoProvider;
 
     public OIDCTokenResponse requestOAuth2TokenByCode(OIDCAuthRequest authRequest) {
         MultiValueMap<String, String> requestMap = getCommonRequestBody(authRequest.getCode(), authRequest.getPlatform());
-        String redirectUri = env.getProperty("social." + authRequest.getPlatform() + ".redirect_uri");;
-        if (redirectUri == null) {
-            throw new IllegalArgumentException("Unsupported platform: " + authRequest.getPlatform());
-        }
-
+        String redirectUri = socialInfoProvider.getRedirectUri(authRequest.getPlatform());
         requestMap.add("redirect_uri", redirectUri);
 
-        String requestUri = env.getProperty("social." + authRequest.getPlatform() + ".token_uri");
-        if (requestUri == null) {
-            throw new IllegalArgumentException("Unsupported platform: " + authRequest.getPlatform());
-        }
+        String requestUri = socialInfoProvider.getTokenUri(authRequest.getPlatform());
 
         Class<? extends OIDCTokenResponse> responseClass = switch (authRequest.getPlatform()) {
             case "google" -> GoogleTokenResponse.class;
@@ -124,15 +116,8 @@ public class OAuth2TokenProvider {
 
     private MultiValueMap<String, String> getCommonRequestBody(String code, String platform) {
         String grantType = "authorization_code";
-        String clientId = env.getProperty("social." + platform + ".client_id");
-        if (clientId == null) {
-            throw new IllegalArgumentException("Unsupported platform: " + platform);
-        }
-
-        String clientSecret = env.getProperty("social." + platform + ".client_secret");
-        if (clientSecret == null) {
-            throw new IllegalArgumentException("Unsupported platform: " + platform);
-        }
+        String clientId = socialInfoProvider.getClientId(platform);
+        String clientSecret = socialInfoProvider.getClientSecret(platform);
 
         MultiValueMap<String, String> bodyMap = new LinkedMultiValueMap<>();
         bodyMap.add("grant_type", grantType);

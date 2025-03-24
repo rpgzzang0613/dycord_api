@@ -6,7 +6,6 @@ import io.jsonwebtoken.Jwts;
 import kr.co.soymilk.dycord_api.member.dto.oauth2.oidc.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.core.env.Environment;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
@@ -31,13 +30,10 @@ import java.util.List;
 public class OIDCUtil {
 
     private final RestClient restClient;
-    private final Environment env;
+    private final SocialInfoProvider socialInfoProvider;
 
     public String requestJwksUri(String platform) {
-        String uri = env.getProperty("social."+ platform +".oidc.meta_uri");
-        if (uri == null) {
-            throw new IllegalStateException("Unexpected platform: " + platform);
-        }
+        String uri = socialInfoProvider.getOidcMetaUri(platform);
 
         OIDCMetaData metaDto = restClient.get()
                 .uri(uri)
@@ -94,15 +90,8 @@ public class OIDCUtil {
             return false;
         }
 
-        String iss = env.getProperty("social."+ platform +".oidc.iss");
-        if (iss == null) {
-            throw new IllegalStateException("Unexpected platform: " + platform);
-        }
-
-        String aud = env.getProperty("social." + platform + ".client_id");
-        if (aud == null) {
-            throw new IllegalStateException("Unexpected platform: " + platform);
-        }
+        String iss = socialInfoProvider.getOidcIss(platform);
+        String aud = socialInfoProvider.getClientId(platform);
 
         boolean isValidIss = idTokenPayload.getIss().equals(iss);
         boolean isValidAud = idTokenPayload.getAud().equals(aud);
