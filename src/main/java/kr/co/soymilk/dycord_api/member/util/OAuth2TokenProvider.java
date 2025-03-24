@@ -66,7 +66,7 @@ public class OAuth2TokenProvider {
         MultiValueMap<String, String> requestMap = getCommonRequestBody(authRequest.getCode(), authRequest.getPlatform());
         requestMap.add("state", authRequest.getState());
 
-        String requestUri = getRequestUri(authRequest.getPlatform());
+        String requestUri = socialInfoProvider.getTokenUri(authRequest.getPlatform());
 
         return restClient.post()
                 .uri(requestUri)
@@ -126,15 +126,6 @@ public class OAuth2TokenProvider {
         bodyMap.add("code", code);
 
         return bodyMap;
-    }
-
-    private String getRequestUri(String platform) {
-        return switch (platform) {
-            case "google" -> "https://oauth2.googleapis.com/token";
-            case "kakao" -> "https://kauth.kakao.com/oauth/token";
-            case "naver" -> "https://nid.naver.com/oauth2.0/token";
-            default -> "";
-        };
     }
 
 }
