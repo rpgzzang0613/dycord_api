@@ -49,7 +49,7 @@ public class OAuth2ProfileProvider {
             return null;
         }
 
-        // 추출한 jwk로 퍼블릭키를 생성하여 검증 및 payload 변환
+        // 추출한 jwk로 퍼블릭키를 생성하여 id_token 검증 후 payload 변환
         Claims verifiedPayload = oidcUtil.parsePayloadFromVerifiedIdToken(idToken, jwk);
 
         if (verifiedPayload == null || verifiedPayload.getSubject() == null) {
