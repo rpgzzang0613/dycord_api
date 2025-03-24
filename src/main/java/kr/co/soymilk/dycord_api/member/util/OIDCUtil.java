@@ -101,14 +101,14 @@ public class OIDCUtil {
         return isValidIss && isValidAud && isValidExp && isValidNonce;
     }
 
-    public OIDCJwk filterJwk(String header, List<OIDCJwk> oidcKeys) {
+    public OIDCJwk filterJwk(String header, List<OIDCJwk> jwks) {
 
         IdTokenHeader idTokenHeader = parseIdTokenHeader(header);
         if (idTokenHeader == null) {
             return null;
         }
 
-        return oidcKeys.stream()
+        return jwks.stream()
                 .filter(key -> key.getKid().equals(idTokenHeader.getKid()) && key.getAlg().equals(idTokenHeader.getAlg()))
                 .findFirst()
                 .orElse(null);
