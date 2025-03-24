@@ -9,6 +9,7 @@ import kr.co.soymilk.dycord_api.member.dto.oauth2.oidc.OIDCJwk;
 import kr.co.soymilk.dycord_api.member.dto.oauth2.oidc.OIDCProfile;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.core.env.Environment;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
@@ -25,6 +26,7 @@ public class OAuth2ProfileProvider {
 
     private final RestClient restClient;
     private final OIDCUtil oidcUtil;
+    private final Environment env;
 
     public OIDCProfile getProfileFromIdToken(String idToken, String nonce, String platform) {
         String[] tokenArr = idToken.split("\\.");
@@ -63,8 +65,13 @@ public class OAuth2ProfileProvider {
     }
 
     public NaverProfileResponse requestNaverProfileByToken(String accessToken) {
+        String uri = env.getProperty("social.naver.profile_uri");
+        if (uri == null) {
+            throw new IllegalArgumentException("env naver profile uri error");
+        }
+
         return restClient.get()
-                .uri("https://openapi.naver.com/v1/nid/me")
+                .uri(uri)
                 .header("Authorization", "Bearer " + accessToken)
                 .accept(MediaType.APPLICATION_JSON)
                 .exchange((request, response) -> {

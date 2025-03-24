@@ -34,13 +34,10 @@ public class OIDCUtil {
     private final Environment env;
 
     public String requestJwksUri(String platform) {
-        String path = "/.well-known/openid-configuration";
-
-        String uri = switch (platform) {
-            case "kakao" -> "https://kauth.kakao.com" + path;
-            case "google" -> "https://accounts.google.com" + path;
-            default -> throw new IllegalStateException("Unexpected platform: " + platform);
-        };
+        String uri = env.getProperty("social."+ platform +".oidc.meta_uri");
+        if (uri == null) {
+            throw new IllegalStateException("Unexpected platform: " + platform);
+        }
 
         OIDCMetaData metaDto = restClient.get()
                 .uri(uri)
@@ -97,17 +94,15 @@ public class OIDCUtil {
             return false;
         }
 
-        String iss = switch (platform) {
-            case "kakao" -> "https://kauth.kakao.com";
-            case "google" -> "https://accounts.google.com";
-            default -> "";
-        };
+        String iss = env.getProperty("social."+ platform +".oidc.iss");
+        if (iss == null) {
+            throw new IllegalStateException("Unexpected platform: " + platform);
+        }
 
-        String aud = switch (platform) {
-            case "kakao" -> env.getProperty("social.kakao.client_id");
-            case "google" -> env.getProperty("social.google.client_id");
-            default -> "";
-        };
+        String aud = env.getProperty("social." + platform + ".client_id");
+        if (aud == null) {
+            throw new IllegalStateException("Unexpected platform: " + platform);
+        }
 
         boolean isValidIss = idTokenPayload.getIss().equals(iss);
         boolean isValidAud = idTokenPayload.getAud().equals(aud);

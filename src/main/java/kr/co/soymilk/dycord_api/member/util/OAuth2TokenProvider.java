@@ -31,9 +31,17 @@ public class OAuth2TokenProvider {
 
     public OIDCTokenResponse requestOAuth2TokenByCode(OIDCAuthRequest authRequest) {
         MultiValueMap<String, String> requestMap = getCommonRequestBody(authRequest.getCode(), authRequest.getPlatform());
-        requestMap.add("redirect_uri", env.getProperty("social." + authRequest.getPlatform() + ".redirect_uri"));
+        String redirectUri = env.getProperty("social." + authRequest.getPlatform() + ".redirect_uri");;
+        if (redirectUri == null) {
+            throw new IllegalArgumentException("Unsupported platform: " + authRequest.getPlatform());
+        }
 
-        String requestUri = getRequestUri(authRequest.getPlatform());
+        requestMap.add("redirect_uri", redirectUri);
+
+        String requestUri = env.getProperty("social." + authRequest.getPlatform() + ".token_uri");
+        if (requestUri == null) {
+            throw new IllegalArgumentException("Unsupported platform: " + authRequest.getPlatform());
+        }
 
         Class<? extends OIDCTokenResponse> responseClass = switch (authRequest.getPlatform()) {
             case "google" -> GoogleTokenResponse.class;
@@ -117,7 +125,14 @@ public class OAuth2TokenProvider {
     private MultiValueMap<String, String> getCommonRequestBody(String code, String platform) {
         String grantType = "authorization_code";
         String clientId = env.getProperty("social." + platform + ".client_id");
+        if (clientId == null) {
+            throw new IllegalArgumentException("Unsupported platform: " + platform);
+        }
+
         String clientSecret = env.getProperty("social." + platform + ".client_secret");
+        if (clientSecret == null) {
+            throw new IllegalArgumentException("Unsupported platform: " + platform);
+        }
 
         MultiValueMap<String, String> bodyMap = new LinkedMultiValueMap<>();
         bodyMap.add("grant_type", grantType);
