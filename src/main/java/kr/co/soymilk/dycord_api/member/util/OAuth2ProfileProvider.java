@@ -17,7 +17,7 @@ import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.RestClient;
 
-import java.util.List;
+import java.util.Set;
 
 @Slf4j
 @Component
@@ -43,7 +43,7 @@ public class OAuth2ProfileProvider {
         String jwksUri = oidcUtil.requestJwksUri(platform);
 
         // 조회한 jwks_uri로부터 jwks 조회 (캐시에 있으면 그걸로 꺼내옴)
-        List<Jwk> jwks = oidcUtil.getJwksWithCache(jwksUri);
+        Set<Jwk> jwks = oidcUtil.getJwksWithCache(jwksUri);
 
         // jwks와 헤더의 kid를 비교하여 사용할 jwk 추출
         FilteredJwkResult filteredJwkRes = oidcUtil.filterJwk(header, jwks);

@@ -22,7 +22,7 @@ import java.security.PublicKey;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.RSAPublicKeySpec;
 import java.util.Base64;
-import java.util.List;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
@@ -34,7 +34,7 @@ public class OIDCUtil {
     private final RestClient restClient;
     private final SocialInfoProvider socialInfoProvider;
 
-    private final ConcurrentMap<String, List<Jwk>> jwksCache = new ConcurrentHashMap<>();
+    private final ConcurrentMap<String, Set<Jwk>> jwksCache = new ConcurrentHashMap<>();
 
     public String requestJwksUri(String platform) {
         String uri = socialInfoProvider.getOidcMetaUri(platform);
@@ -54,7 +54,7 @@ public class OIDCUtil {
         return metaDto.getJwks_uri();
     }
 
-    public List<Jwk> getJwksWithCache(String jwksUri) {
+    public Set<Jwk> getJwksWithCache(String jwksUri) {
         if (jwksCache.containsKey(jwksUri)) {
             return jwksCache.get(jwksUri);
         }
@@ -62,11 +62,11 @@ public class OIDCUtil {
         return requestJwks(jwksUri);
     }
 
-    public List<Jwk> getJwksWithoutCache(String jwksUri) {
+    public Set<Jwk> getJwksWithoutCache(String jwksUri) {
         return requestJwks(jwksUri);
     }
 
-    private List<Jwk> requestJwks(String jwksUri) {
+    private Set<Jwk> requestJwks(String jwksUri) {
         JwkResponse oidcResDto = restClient.get()
                 .uri(jwksUri)
                 .accept(MediaType.APPLICATION_JSON)
@@ -118,7 +118,7 @@ public class OIDCUtil {
         return isValidIss && isValidAud && isValidExp && isValidNonce;
     }
 
-    public FilteredJwkResult filterJwk(String header, List<Jwk> jwks) {
+    public FilteredJwkResult filterJwk(String header, Set<Jwk> jwks) {
 
         IdTokenHeader idTokenHeader = parseIdTokenHeader(header);
         if (idTokenHeader == null) {
