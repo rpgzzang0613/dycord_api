@@ -4,13 +4,16 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.util.List;
-
 @Getter
 @Setter
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class OIDCJwksResponse {
+public class Jwk {
 
-    private List<OIDCJwk> keys;
+    private String kid;
+    private String kty;
+    private String alg;
+    private String use;
+    private String n;
+    private String e;
 
 }

@@ -7,13 +7,12 @@ import lombok.Setter;
 @Getter
 @Setter
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class OIDCJwk {
+public class FilteredJwkResult {
 
-    private String kid;
-    private String kty;
-    private String alg;
-    private String use;
-    private String n;
-    private String e;
+    Jwk jwk;
+
+    public boolean hasJwk() {
+        return this.jwk != null;
+    }
 
 }

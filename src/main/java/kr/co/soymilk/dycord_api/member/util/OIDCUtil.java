@@ -23,6 +23,8 @@ import java.security.spec.InvalidKeySpecException;
 import java.security.spec.RSAPublicKeySpec;
 import java.util.Base64;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 @Slf4j
 @Component
@@ -31,6 +33,8 @@ public class OIDCUtil {
 
     private final RestClient restClient;
     private final SocialInfoProvider socialInfoProvider;
+
+    private final ConcurrentMap<String, List<Jwk>> jwksCache = new ConcurrentHashMap<>();
 
     public String requestJwksUri(String platform) {
         String uri = socialInfoProvider.getOidcMetaUri(platform);
@@ -50,9 +54,20 @@ public class OIDCUtil {
         return metaDto.getJwks_uri();
     }
 
-    // TODO 매번 조회하지 말고 캐싱해두도록 변경하기
-    public List<OIDCJwk> requestJwks(String jwksUri) {
-        OIDCJwksResponse oidcResDto = restClient.get()
+    public List<Jwk> getJwksWithCache(String jwksUri) {
+        if (jwksCache.containsKey(jwksUri)) {
+            return jwksCache.get(jwksUri);
+        }
+
+        return requestJwks(jwksUri);
+    }
+
+    public List<Jwk> getJwksWithoutCache(String jwksUri) {
+        return requestJwks(jwksUri);
+    }
+
+    private List<Jwk> requestJwks(String jwksUri) {
+        JwkResponse oidcResDto = restClient.get()
                 .uri(jwksUri)
                 .accept(MediaType.APPLICATION_JSON)
                 .retrieve()
@@ -67,11 +82,13 @@ public class OIDCUtil {
                         throw new HttpServerErrorException(httpStatusCode, bodyStr.isEmpty() ? response.getStatusText() : bodyStr);
                     }
                 })
-                .body(OIDCJwksResponse.class);
+                .body(JwkResponse.class);
 
         if (oidcResDto == null || oidcResDto.getKeys() == null) {
             throw new HttpServerErrorException(HttpStatus.INTERNAL_SERVER_ERROR, "OIDC Keys 조회 실패");
         }
+
+        jwksCache.put(jwksUri, oidcResDto.getKeys());
 
         return oidcResDto.getKeys();
     }
@@ -101,17 +118,22 @@ public class OIDCUtil {
         return isValidIss && isValidAud && isValidExp && isValidNonce;
     }
 
-    public OIDCJwk filterJwk(String header, List<OIDCJwk> jwks) {
+    public FilteredJwkResult filterJwk(String header, List<Jwk> jwks) {
 
         IdTokenHeader idTokenHeader = parseIdTokenHeader(header);
         if (idTokenHeader == null) {
             return null;
         }
 
-        return jwks.stream()
+        Jwk filteredJwk = jwks.stream()
                 .filter(key -> key.getKid().equals(idTokenHeader.getKid()) && key.getAlg().equals(idTokenHeader.getAlg()))
                 .findFirst()
                 .orElse(null);
+
+        FilteredJwkResult jwkFilterRes = new FilteredJwkResult();
+        jwkFilterRes.setJwk(filteredJwk);
+
+        return jwkFilterRes;
     }
 
     private IdTokenHeader parseIdTokenHeader(String header) {
@@ -128,7 +150,7 @@ public class OIDCUtil {
         return idTokenHeader;
     }
 
-    public Claims parsePayloadFromVerifiedIdToken(String idToken, OIDCJwk jwk) {
+    public Claims parsePayloadFromVerifiedIdToken(String idToken, Jwk jwk) {
         PublicKey publicKey = generatePublicKey(jwk);
 
         Claims payload;
@@ -145,7 +167,7 @@ public class OIDCUtil {
         return payload;
     }
 
-    private PublicKey generatePublicKey(OIDCJwk publicKey) {
+    private PublicKey generatePublicKey(Jwk publicKey) {
         byte[] nBytes = Base64.getUrlDecoder().decode(publicKey.getN());
         byte[] eBytes = Base64.getUrlDecoder().decode(publicKey.getE());
 

@@ -5,7 +5,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.jsonwebtoken.Claims;
 import kr.co.soymilk.dycord_api.member.dto.oauth2.OAuth2ErrorResponse;
 import kr.co.soymilk.dycord_api.member.dto.oauth2.naver.NaverProfileResponse;
-import kr.co.soymilk.dycord_api.member.dto.oauth2.oidc.OIDCJwk;
+import kr.co.soymilk.dycord_api.member.dto.oauth2.oidc.Jwk;
+import kr.co.soymilk.dycord_api.member.dto.oauth2.oidc.FilteredJwkResult;
 import kr.co.soymilk.dycord_api.member.dto.oauth2.oidc.OIDCProfile;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -41,17 +42,22 @@ public class OAuth2ProfileProvider {
         // OIDC 프로바이더로부터 jwks_uri 조회
         String jwksUri = oidcUtil.requestJwksUri(platform);
 
-        // 조회한 jwks_uri로부터 jwks 조회
-        List<OIDCJwk> jwks = oidcUtil.requestJwks(jwksUri);
+        // 조회한 jwks_uri로부터 jwks 조회 (캐시에 있으면 그걸로 꺼내옴)
+        List<Jwk> jwks = oidcUtil.getJwksWithCache(jwksUri);
 
         // jwks와 헤더의 kid를 비교하여 사용할 jwk 추출
-        OIDCJwk jwk = oidcUtil.filterJwk(header, jwks);
-        if (jwk == null) {
+        FilteredJwkResult filteredJwkRes = oidcUtil.filterJwk(header, jwks);
+        if (filteredJwkRes == null) {
             return null;
         }
 
+        if (!filteredJwkRes.hasJwk()) {
+            // OIDC 프로바이더가 jwks를 갱신한 경우이므로 캐시없이 jwks_uri로부터 jwks 재조회
+            jwks = oidcUtil.getJwksWithoutCache(jwksUri);
+        }
+
         // 추출한 jwk로 퍼블릭키를 생성하여 id_token 검증 후 payload 변환
-        Claims verifiedPayload = oidcUtil.parsePayloadFromVerifiedIdToken(idToken, jwk);
+        Claims verifiedPayload = oidcUtil.parsePayloadFromVerifiedIdToken(idToken, filteredJwkRes.getJwk());
 
         if (verifiedPayload == null || verifiedPayload.getSubject() == null) {
             return null;
