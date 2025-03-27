@@ -55,11 +55,7 @@ public class OIDCUtil {
     }
 
     public Set<Jwk> getJwksWithCache(String jwksUri) {
-        if (jwksCache.containsKey(jwksUri)) {
-            return jwksCache.get(jwksUri);
-        }
-
-        return requestJwks(jwksUri);
+        return jwksCache.computeIfAbsent(jwksUri, this::requestJwks);
     }
 
     public Set<Jwk> getJwksWithoutCache(String jwksUri) {
@@ -87,8 +83,6 @@ public class OIDCUtil {
         if (oidcResDto == null || oidcResDto.getKeys() == null) {
             throw new HttpServerErrorException(HttpStatus.INTERNAL_SERVER_ERROR, "OIDC Keys 조회 실패");
         }
-
-        jwksCache.put(jwksUri, oidcResDto.getKeys());
 
         return oidcResDto.getKeys();
     }
