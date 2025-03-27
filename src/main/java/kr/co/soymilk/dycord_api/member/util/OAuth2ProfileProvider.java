@@ -54,6 +54,16 @@ public class OAuth2ProfileProvider {
         if (!filteredJwkRes.hasJwk()) {
             // OIDC 프로바이더가 jwks를 갱신한 경우이므로 캐시없이 jwks_uri로부터 jwks 재조회
             jwks = oidcUtil.getJwksWithoutCache(jwksUri);
+
+            // jwks와 헤더의 kid를 비교하여 사용할 jwk 추출
+            filteredJwkRes = oidcUtil.filterJwk(header, jwks);
+            if (filteredJwkRes == null) {
+                return null;
+            }
+
+            if (!filteredJwkRes.hasJwk()) {
+                throw new IllegalStateException("jwks 갱신되어 재조회 시도했으나 조회 실패");
+            }
         }
 
         // 추출한 jwk로 퍼블릭키를 생성하여 id_token 검증 후 payload 변환
