@@ -39,19 +39,19 @@ public class OIDCUtil {
     public String requestJwksUri(String platform) {
         String uri = socialInfoProvider.getOidcMetaUri(platform);
 
-        OIDCMetaData metaDto = restClient.get()
+        OIDCRestDto.MetaDataResponse metaRes = restClient.get()
                 .uri(uri)
                 .retrieve()
                 .onStatus(HttpStatusCode::isError, ((request, response) -> {
                     throw new HttpServerErrorException(response.getStatusCode(), "Cannot get jwks_uri");
                 }))
-                .body(OIDCMetaData.class);
+                .body(OIDCRestDto.MetaDataResponse.class);
 
-        if (metaDto == null) {
+        if (metaRes == null) {
             throw new HttpServerErrorException(HttpStatus.INTERNAL_SERVER_ERROR, "Cannot get jwks_uri");
         }
 
-        return metaDto.getJwks_uri();
+        return metaRes.getJwks_uri();
     }
 
     public Set<Jwk> getJwksWithCache(String jwksUri) {
@@ -67,7 +67,7 @@ public class OIDCUtil {
     }
 
     private Set<Jwk> requestJwks(String jwksUri) {
-        JwkResponse oidcResDto = restClient.get()
+        OIDCRestDto.JwksResponse oidcResDto = restClient.get()
                 .uri(jwksUri)
                 .accept(MediaType.APPLICATION_JSON)
                 .retrieve()
@@ -82,7 +82,7 @@ public class OIDCUtil {
                         throw new HttpServerErrorException(httpStatusCode, bodyStr.isEmpty() ? response.getStatusText() : bodyStr);
                     }
                 })
-                .body(JwkResponse.class);
+                .body(OIDCRestDto.JwksResponse.class);
 
         if (oidcResDto == null || oidcResDto.getKeys() == null) {
             throw new HttpServerErrorException(HttpStatus.INTERNAL_SERVER_ERROR, "OIDC Keys 조회 실패");
@@ -96,9 +96,9 @@ public class OIDCUtil {
     public boolean validateUnsignedPayload(String payload, String nonce, String platform) {
         byte[] decodedBytes = Base64.getUrlDecoder().decode(payload);
         ObjectMapper objectMapper = new ObjectMapper();
-        IdTokenPayload idTokenPayload;
+        IdTokenDto.Payload idTokenPayload;
         try {
-            idTokenPayload = objectMapper.readValue(decodedBytes, IdTokenPayload.class);
+            idTokenPayload = objectMapper.readValue(decodedBytes, IdTokenDto.Payload.class);
         } catch (IOException e) {
             idTokenPayload = null;
         }
@@ -118,9 +118,9 @@ public class OIDCUtil {
         return isValidIss && isValidAud && isValidExp && isValidNonce;
     }
 
-    public FilteredJwkResult filterJwk(String header, Set<Jwk> jwks) {
+    public JwkFilterResult filterJwk(String header, Set<Jwk> jwks) {
 
-        IdTokenHeader idTokenHeader = parseIdTokenHeader(header);
+        IdTokenDto.Header idTokenHeader = parseIdTokenHeader(header);
         if (idTokenHeader == null) {
             return null;
         }
@@ -130,19 +130,19 @@ public class OIDCUtil {
                 .findFirst()
                 .orElse(null);
 
-        FilteredJwkResult jwkFilterRes = new FilteredJwkResult();
+        JwkFilterResult jwkFilterRes = new JwkFilterResult();
         jwkFilterRes.setJwk(filteredJwk);
 
         return jwkFilterRes;
     }
 
-    private IdTokenHeader parseIdTokenHeader(String header) {
+    private IdTokenDto.Header parseIdTokenHeader(String header) {
         byte[] decodedHeaderBytes = Base64.getUrlDecoder().decode(header);
 
-        IdTokenHeader idTokenHeader;
+        IdTokenDto.Header idTokenHeader;
         try {
             ObjectMapper objectMapper = new ObjectMapper();
-            idTokenHeader = objectMapper.readValue(decodedHeaderBytes, IdTokenHeader.class);
+            idTokenHeader = objectMapper.readValue(decodedHeaderBytes, IdTokenDto.Header.class);
         } catch (IOException e) {
             idTokenHeader = null;
         }

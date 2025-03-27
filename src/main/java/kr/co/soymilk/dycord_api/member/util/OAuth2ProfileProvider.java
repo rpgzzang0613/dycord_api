@@ -3,10 +3,10 @@ package kr.co.soymilk.dycord_api.member.util;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.jsonwebtoken.Claims;
-import kr.co.soymilk.dycord_api.member.dto.oauth2.OAuth2ErrorResponse;
-import kr.co.soymilk.dycord_api.member.dto.oauth2.naver.NaverProfileResponse;
+import kr.co.soymilk.dycord_api.member.dto.oauth2.OAuth2RestDto;
+import kr.co.soymilk.dycord_api.member.dto.oauth2.naver.NaverRestDto;
 import kr.co.soymilk.dycord_api.member.dto.oauth2.oidc.Jwk;
-import kr.co.soymilk.dycord_api.member.dto.oauth2.oidc.FilteredJwkResult;
+import kr.co.soymilk.dycord_api.member.dto.oauth2.oidc.JwkFilterResult;
 import kr.co.soymilk.dycord_api.member.dto.oauth2.oidc.OIDCProfile;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -46,28 +46,28 @@ public class OAuth2ProfileProvider {
         Set<Jwk> jwks = oidcUtil.getJwksWithCache(jwksUri);
 
         // jwks와 헤더의 kid를 비교하여 사용할 jwk 추출
-        FilteredJwkResult filteredJwkRes = oidcUtil.filterJwk(header, jwks);
-        if (filteredJwkRes == null) {
+        JwkFilterResult filterRes = oidcUtil.filterJwk(header, jwks);
+        if (filterRes == null) {
             return null;
         }
 
-        if (!filteredJwkRes.hasJwk()) {
+        if (filterRes.isExpired()) {
             // OIDC 프로바이더가 jwks를 갱신한 경우이므로 캐시없이 jwks_uri로부터 jwks 재조회
             jwks = oidcUtil.getJwksWithoutCache(jwksUri);
 
             // jwks와 헤더의 kid를 비교하여 사용할 jwk 추출
-            filteredJwkRes = oidcUtil.filterJwk(header, jwks);
-            if (filteredJwkRes == null) {
+            filterRes = oidcUtil.filterJwk(header, jwks);
+            if (filterRes == null) {
                 return null;
             }
 
-            if (!filteredJwkRes.hasJwk()) {
+            if (filterRes.isExpired()) {
                 throw new IllegalStateException("jwks 갱신되어 재조회 시도했으나 조회 실패");
             }
         }
 
         // 추출한 jwk로 퍼블릭키를 생성하여 id_token 검증 후 payload 변환
-        Claims verifiedPayload = oidcUtil.parsePayloadFromVerifiedIdToken(idToken, filteredJwkRes.getJwk());
+        Claims verifiedPayload = oidcUtil.parsePayloadFromVerifiedIdToken(idToken, filterRes.getJwk());
 
         if (verifiedPayload == null || verifiedPayload.getSubject() == null) {
             return null;
@@ -79,7 +79,7 @@ public class OAuth2ProfileProvider {
                 .build();
     }
 
-    public NaverProfileResponse requestNaverProfileByToken(String accessToken) {
+    public NaverRestDto.ProfileResponse requestNaverProfileByToken(String accessToken) {
         String uri = socialInfoProvider.getProfileUri("naver");
 
         return restClient.get()
@@ -89,12 +89,12 @@ public class OAuth2ProfileProvider {
                 .exchange((request, response) -> {
                     HttpStatusCode httpStatusCode = response.getStatusCode();
                     ObjectMapper objectMapper = new ObjectMapper();
-                    NaverProfileResponse naverProfileResDto = objectMapper.readValue(response.getBody(), new TypeReference<>() {});
+                    NaverRestDto.ProfileResponse naverProfileResDto = objectMapper.readValue(response.getBody(), new TypeReference<>() {});
 
                     if (httpStatusCode.isError()) {
                         if (naverProfileResDto != null && !"00".equals(naverProfileResDto.getResultcode())) {
                             // 네이버에서 에러를 반환한 경우
-                            OAuth2ErrorResponse errResDto = new OAuth2ErrorResponse();
+                            OAuth2RestDto.ErrorResponse errResDto = new OAuth2RestDto.ErrorResponse();
                             errResDto.setError(naverProfileResDto.getResultcode());
                             errResDto.setError_description(naverProfileResDto.getMessage());
 

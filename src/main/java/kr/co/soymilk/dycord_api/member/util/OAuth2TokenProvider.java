@@ -2,13 +2,7 @@ package kr.co.soymilk.dycord_api.member.util;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import kr.co.soymilk.dycord_api.member.dto.oauth2.OAuth2ErrorResponse;
-import kr.co.soymilk.dycord_api.member.dto.oauth2.naver.NaverAuthRequest;
-import kr.co.soymilk.dycord_api.member.dto.oauth2.naver.NaverTokenResponse;
-import kr.co.soymilk.dycord_api.member.dto.oauth2.oidc.GoogleTokenResponse;
-import kr.co.soymilk.dycord_api.member.dto.oauth2.oidc.KakaoTokenResponse;
-import kr.co.soymilk.dycord_api.member.dto.oauth2.oidc.OIDCAuthRequest;
-import kr.co.soymilk.dycord_api.member.dto.oauth2.oidc.OIDCTokenResponse;
+import kr.co.soymilk.dycord_api.member.dto.oauth2.OAuth2RestDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatusCode;
@@ -28,18 +22,12 @@ public class OAuth2TokenProvider {
     private final RestClient restClient;
     private final SocialInfoProvider socialInfoProvider;
 
-    public OIDCTokenResponse requestOAuth2TokenByCode(OIDCAuthRequest authRequest) {
+    public OAuth2RestDto.TokenResponse requestOAuth2TokenByCode(OAuth2RestDto.TokenRequest authRequest) {
         MultiValueMap<String, String> requestMap = getCommonRequestBody(authRequest.getCode(), authRequest.getPlatform());
         String redirectUri = socialInfoProvider.getRedirectUri(authRequest.getPlatform());
         requestMap.add("redirect_uri", redirectUri);
 
         String requestUri = socialInfoProvider.getTokenUri(authRequest.getPlatform());
-
-        Class<? extends OIDCTokenResponse> responseClass = switch (authRequest.getPlatform()) {
-            case "google" -> GoogleTokenResponse.class;
-            case "kakao" -> KakaoTokenResponse.class;
-            default -> throw new IllegalArgumentException("Unsupported platform: " + authRequest.getPlatform());
-        };
 
         return restClient.post()
                 .uri(requestUri)
@@ -51,7 +39,7 @@ public class OAuth2TokenProvider {
                     HttpStatusCode httpStatusCode = response.getStatusCode();
 
                     ObjectMapper objectMapper = new ObjectMapper();
-                    OAuth2ErrorResponse errResDto = objectMapper.readValue(response.getBody(), new TypeReference<>() {});
+                    OAuth2RestDto.ErrorResponse errResDto = objectMapper.readValue(response.getBody(), new TypeReference<>() {});
 
                     if (httpStatusCode.is4xxClientError()) {
                         throw new HttpClientErrorException(httpStatusCode, errResDto.toJsonString());
@@ -59,10 +47,10 @@ public class OAuth2TokenProvider {
 
                     throw new HttpServerErrorException(httpStatusCode, errResDto.toJsonString());
                 })
-                .body(responseClass);
+                .body(OAuth2RestDto.TokenResponse.class);
     }
 
-    public NaverTokenResponse requestNaverTokenByCode(NaverAuthRequest authRequest) {
+    public OAuth2RestDto.TokenResponse requestNaverTokenByCode(OAuth2RestDto.TokenRequest authRequest) {
         MultiValueMap<String, String> requestMap = getCommonRequestBody(authRequest.getCode(), authRequest.getPlatform());
         requestMap.add("state", authRequest.getState());
 
@@ -76,12 +64,12 @@ public class OAuth2TokenProvider {
                 .exchange((request, response) -> {
                     HttpStatusCode httpStatusCode = response.getStatusCode();
                     ObjectMapper objectMapper = new ObjectMapper();
-                    NaverTokenResponse naverTokenResDto = objectMapper.readValue(response.getBody(), new TypeReference<>() {});
+                    OAuth2RestDto.TokenResponse naverTokenResDto = objectMapper.readValue(response.getBody(), new TypeReference<>() {});
 
                     if (httpStatusCode.isError()) {
                         if (naverTokenResDto != null && naverTokenResDto.getError() != null) {
                             // 네이버에서 에러를 반환한 경우
-                            OAuth2ErrorResponse errResDto = new OAuth2ErrorResponse();
+                            OAuth2RestDto.ErrorResponse errResDto = new OAuth2RestDto.ErrorResponse();
                             errResDto.setError(naverTokenResDto.getError());
                             errResDto.setError_description(naverTokenResDto.getError_description());
 
@@ -103,7 +91,7 @@ public class OAuth2TokenProvider {
 
                     if (naverTokenResDto.getError() != null) {
                         // HttpStatus는 200이지만 네이버에서 에러를 반환한 경우
-                        OAuth2ErrorResponse errResDto = new OAuth2ErrorResponse();
+                        OAuth2RestDto.ErrorResponse errResDto = new OAuth2RestDto.ErrorResponse();
                         errResDto.setError(naverTokenResDto.getError());
                         errResDto.setError_description(naverTokenResDto.getError_description());
 
