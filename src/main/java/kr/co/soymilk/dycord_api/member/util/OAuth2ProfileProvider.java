@@ -76,6 +76,7 @@ public class OAuth2ProfileProvider {
         // 검증된 payload로부터 social uid 추출하여 반환
         return OIDCProfile.builder()
                 .id(verifiedPayload.getSubject())
+                .email(verifiedPayload.get("email").toString())
                 .build();
     }
 

@@ -19,5 +19,6 @@ public class NaverProfile {
     private String profile_image;
     private String birthyear;
     private String mobile;
+    private String mobile_e164;
 
 }
