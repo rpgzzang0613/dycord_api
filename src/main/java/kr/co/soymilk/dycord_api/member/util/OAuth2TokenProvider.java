@@ -23,12 +23,15 @@ public class OAuth2TokenProvider {
     private final SocialInfoProvider socialInfoProvider;
 
     public OAuth2RestDto.TokenResponse requestOAuth2TokenByCode(OAuth2RestDto.TokenRequest authRequest) {
+        // body 세팅 (content-type: x-www-form-urlencoded 이므로 MultiValueMap에 담아 전달)
         MultiValueMap<String, String> requestMap = getCommonRequestBody(authRequest.getCode(), authRequest.getPlatform());
         String redirectUri = socialInfoProvider.getRedirectUri(authRequest.getPlatform());
         requestMap.add("redirect_uri", redirectUri);
 
+        // 토큰을 요청할 주소 세팅
         String requestUri = socialInfoProvider.getTokenUri(authRequest.getPlatform());
 
+        // 요청 및 결과 반환
         return restClient.post()
                 .uri(requestUri)
                 .contentType(MediaType.APPLICATION_FORM_URLENCODED)
@@ -36,6 +39,7 @@ public class OAuth2TokenProvider {
                 .body(requestMap)
                 .retrieve()
                 .onStatus(HttpStatusCode::isError, (request, response) -> {
+                    // Http 응답 코드가 2xx가 아닐 경우 실행되는 함수
                     HttpStatusCode httpStatusCode = response.getStatusCode();
 
                     ObjectMapper objectMapper = new ObjectMapper();
@@ -51,17 +55,22 @@ public class OAuth2TokenProvider {
     }
 
     public OAuth2RestDto.TokenResponse requestNaverTokenByCode(OAuth2RestDto.TokenRequest authRequest) {
+        // body 세팅 (content-type: x-www-form-urlencoded 이므로 MultiValueMap에 담아 전달)
         MultiValueMap<String, String> requestMap = getCommonRequestBody(authRequest.getCode(), authRequest.getPlatform());
         requestMap.add("state", authRequest.getState());
 
+        // 토큰을 요청할 주소 세팅
         String requestUri = socialInfoProvider.getTokenUri(authRequest.getPlatform());
 
+        // 요청 및 결과 반환
         return restClient.post()
                 .uri(requestUri)
                 .contentType(MediaType.APPLICATION_FORM_URLENCODED)
                 .accept(MediaType.APPLICATION_JSON)
                 .body(requestMap)
                 .exchange((request, response) -> {
+                    // Http 응답 코드와 관계 없이 실행되는 함수
+
                     HttpStatusCode httpStatusCode = response.getStatusCode();
                     ObjectMapper objectMapper = new ObjectMapper();
                     OAuth2RestDto.TokenResponse naverTokenResDto = objectMapper.readValue(response.getBody(), new TypeReference<>() {});

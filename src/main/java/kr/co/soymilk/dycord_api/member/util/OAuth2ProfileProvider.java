@@ -5,8 +5,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.jsonwebtoken.Claims;
 import kr.co.soymilk.dycord_api.member.dto.oauth2.OAuth2RestDto;
 import kr.co.soymilk.dycord_api.member.dto.oauth2.naver.NaverRestDto;
-import kr.co.soymilk.dycord_api.member.dto.oauth2.oidc.Jwk;
-import kr.co.soymilk.dycord_api.member.dto.oauth2.oidc.JwkFilterResult;
 import kr.co.soymilk.dycord_api.member.dto.oauth2.oidc.OIDCProfile;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -17,72 +15,26 @@ import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.RestClient;
 
-import java.util.Set;
-
 @Slf4j
 @Component
 @RequiredArgsConstructor
 public class OAuth2ProfileProvider {
 
     private final RestClient restClient;
-    private final OIDCUtil oidcUtil;
     private final SocialInfoProvider socialInfoProvider;
 
-    public OIDCProfile getProfileFromIdToken(String idToken, String nonce, String platform) {
-        String[] tokenArr = idToken.split("\\.");
-        String header = tokenArr[0];
-        String payload = tokenArr[1];
-
-        // 서명 검증 전 페이로드 부분만 따로 검증
-        boolean isValidPayload = oidcUtil.validateUnsignedPayload(payload, nonce, platform);
-        if (!isValidPayload) {
-            return null;
-        }
-
-        // OIDC 프로바이더로부터 jwks_uri 조회
-        String jwksUri = oidcUtil.requestJwksUri(platform);
-
-        // 조회한 jwks_uri로부터 jwks 조회 (캐시에 있으면 그걸로 꺼내옴)
-        Set<Jwk> jwks = oidcUtil.getJwksWithCache(jwksUri);
-
-        // jwks와 헤더의 kid를 비교하여 사용할 jwk 추출
-        JwkFilterResult filterRes = oidcUtil.filterJwk(header, jwks);
-        if (filterRes == null) {
-            return null;
-        }
-
-        if (filterRes.isExpired()) {
-            // OIDC 프로바이더가 jwks를 갱신한 경우이므로 캐시없이 jwks_uri로부터 jwks 재조회
-            jwks = oidcUtil.getJwksWithoutCache(jwksUri);
-
-            // jwks와 헤더의 kid를 비교하여 사용할 jwk 추출
-            filterRes = oidcUtil.filterJwk(header, jwks);
-            if (filterRes == null) {
-                return null;
-            }
-
-            if (filterRes.isExpired()) {
-                throw new IllegalStateException("jwks 갱신되어 재조회 시도했으나 조회 실패");
-            }
-        }
-
-        // 추출한 jwk로 퍼블릭키를 생성하여 id_token 검증 후 payload 변환
-        Claims verifiedPayload = oidcUtil.parsePayloadFromVerifiedIdToken(idToken, filterRes.getJwk());
-
-        if (verifiedPayload == null || verifiedPayload.getSubject() == null) {
-            return null;
-        }
-
-        // 검증된 payload로부터 social uid 추출하여 반환
+    public OIDCProfile getProfileFromIdToken(Claims payload) {
         return OIDCProfile.builder()
-                .id(verifiedPayload.getSubject())
-                .email(verifiedPayload.get("email").toString())
+                .id(payload.getSubject())
+                .email(payload.get("email").toString())
                 .build();
     }
 
     public NaverRestDto.ProfileResponse requestNaverProfileByToken(String accessToken) {
+        // 프로필을 요청할 네이버 주소 세팅
         String uri = socialInfoProvider.getProfileUri("naver");
 
+        // 요청 및 결과 반환
         return restClient.get()
                 .uri(uri)
                 .header("Authorization", "Bearer " + accessToken)

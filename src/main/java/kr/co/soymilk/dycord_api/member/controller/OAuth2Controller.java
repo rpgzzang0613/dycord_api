@@ -19,15 +19,15 @@ public class OAuth2Controller {
     private final OAuth2Service OAuth2Service;
 
     @PostMapping("/oidc")
-    public ResponseEntity<OIDCProfile> requestOIDCAuth(@RequestBody OAuth2RestDto.TokenRequest body) {
-        OIDCProfile profile = OAuth2Service.processOIDCAuth(body);
+    public ResponseEntity<OIDCProfile> processAuthByOIDC(@RequestBody OAuth2RestDto.TokenRequest body) {
+        OIDCProfile profile = OAuth2Service.processAuthByOIDC(body);
 
         return ResponseEntity.ok(profile);
     }
 
     @PostMapping("/naver")
-    public ResponseEntity<NaverProfile> requestNaverAuth(@RequestBody OAuth2RestDto.TokenRequest body) {
-        NaverProfile profile = OAuth2Service.processNaverAuth(body);
+    public ResponseEntity<NaverProfile> processAuthByNaver(@RequestBody OAuth2RestDto.TokenRequest body) {
+        NaverProfile profile = OAuth2Service.processAuthByNaver(body);
 
         return ResponseEntity.ok(profile);
     }
