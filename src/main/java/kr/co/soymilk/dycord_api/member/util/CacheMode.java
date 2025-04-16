@@ -1,4 +1,4 @@
-package kr.co.soymilk.dycord_api.common.util;
+package kr.co.soymilk.dycord_api.member.util;
 
 public enum CacheMode {
 

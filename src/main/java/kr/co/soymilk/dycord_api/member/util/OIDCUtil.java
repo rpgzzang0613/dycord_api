@@ -3,7 +3,6 @@ package kr.co.soymilk.dycord_api.member.util;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
-import kr.co.soymilk.dycord_api.common.util.CacheMode;
 import kr.co.soymilk.dycord_api.member.dto.oauth2.oidc.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

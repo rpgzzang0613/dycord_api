@@ -1,8 +1,11 @@
 package kr.co.soymilk.dycord_api.common.config;
 
+import kr.co.soymilk.dycord_api.common.util.OSType;
+import kr.co.soymilk.dycord_api.common.util.ServerUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.hc.client5.http.classic.HttpClient;
 import org.apache.hc.client5.http.config.ConnectionConfig;
+import org.apache.hc.client5.http.config.RequestConfig;
 import org.apache.hc.client5.http.impl.classic.HttpClientBuilder;
 import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManagerBuilder;
 import org.apache.hc.client5.http.io.HttpClientConnectionManager;
@@ -21,13 +24,6 @@ import java.util.concurrent.TimeUnit;
 @Configuration
 public class RestClientConfig {
 
-    private static final int CONNECTION_TIMEOUT_SEC = 10;
-    private static final int SOCKET_TIMEOUT_SEC = 10;
-    private static final int IDLE_SEC = 15;
-
-    private static final int MAX_CONN_TOTAL = 100;
-    private static final int MAX_CONN_PER_ROUTE = 20;
-
     @Bean
     public RestClient restClient() {
         // SimpleClientRequestFactory를 사용할 경우 HttpStatus가 200이 아닐때 response body를 못읽음
@@ -37,25 +33,46 @@ public class RestClientConfig {
     }
 
     private HttpClient httpClient() {
-        return HttpClientBuilder.create()
+        HttpClientBuilder builder = HttpClientBuilder.create()
                 .setConnectionManager(connectionManager())
-                .evictIdleConnections(TimeValue.of(IDLE_SEC, TimeUnit.SECONDS))
-                .build();
+                .setDefaultRequestConfig(requestConfig())
+                .evictExpiredConnections();
+
+        if (ServerUtil.getOsType() == OSType.LINUX) {
+            builder.evictIdleConnections(TimeValue.of(20, TimeUnit.SECONDS));
+        }
+
+        return builder.build();
+    }
+
+    private RequestConfig requestConfig() {
+        RequestConfig.Builder builder = RequestConfig.custom();
+
+        if (ServerUtil.getOsType() == OSType.LINUX) {
+            builder.setConnectionRequestTimeout(20, TimeUnit.SECONDS)
+                    .setResponseTimeout(20, TimeUnit.SECONDS);
+        }
+
+        return builder.build();
     }
 
     private HttpClientConnectionManager connectionManager() {
         return PoolingHttpClientConnectionManagerBuilder.create()
                 .setDefaultConnectionConfig(connectionConfig())
-                .setMaxConnTotal(MAX_CONN_TOTAL)
-                .setMaxConnPerRoute(MAX_CONN_PER_ROUTE)
+                .setMaxConnTotal(50)
+                .setMaxConnPerRoute(15)
                 .build();
     }
 
     private ConnectionConfig connectionConfig() {
-        return ConnectionConfig.custom()
-                .setConnectTimeout(CONNECTION_TIMEOUT_SEC, TimeUnit.SECONDS)
-                .setSocketTimeout(SOCKET_TIMEOUT_SEC, TimeUnit.SECONDS)
-                .build();
+        ConnectionConfig.Builder builder = ConnectionConfig.custom();
+
+        if (ServerUtil.getOsType() == OSType.LINUX) {
+            builder.setConnectTimeout(20, TimeUnit.SECONDS)
+                    .setSocketTimeout(20, TimeUnit.SECONDS);
+        }
+
+        return builder.build();
     }
 
 }
