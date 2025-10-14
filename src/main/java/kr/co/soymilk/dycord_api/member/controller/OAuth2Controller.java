@@ -2,7 +2,6 @@ package kr.co.soymilk.dycord_api.member.controller;
 
 import kr.co.soymilk.dycord_api.member.dto.oauth2.OAuth2RestDto;
 import kr.co.soymilk.dycord_api.member.dto.oauth2.oidc.OIDCProfile;
-import kr.co.soymilk.dycord_api.member.dto.oauth2.naver.NaverProfile;
 import kr.co.soymilk.dycord_api.member.service.OAuth2Service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -21,13 +20,6 @@ public class OAuth2Controller {
     @PostMapping("/oidc")
     public ResponseEntity<OIDCProfile> processAuthByOIDC(@RequestBody OAuth2RestDto.TokenRequest body) {
         OIDCProfile profile = OAuth2Service.processAuthByOIDC(body);
-
-        return ResponseEntity.ok(profile);
-    }
-
-    @PostMapping("/naver")
-    public ResponseEntity<NaverProfile> processAuthByNaver(@RequestBody OAuth2RestDto.TokenRequest body) {
-        NaverProfile profile = OAuth2Service.processAuthByNaver(body);
 
         return ResponseEntity.ok(profile);
     }

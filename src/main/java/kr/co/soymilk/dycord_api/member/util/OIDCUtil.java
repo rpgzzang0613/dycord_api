@@ -3,6 +3,7 @@ package kr.co.soymilk.dycord_api.member.util;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
+import kr.co.soymilk.dycord_api.member.dto.oauth2.OAuth2RestDto;
 import kr.co.soymilk.dycord_api.member.dto.oauth2.oidc.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -37,19 +38,19 @@ public class OIDCUtil {
 
     private final ConcurrentMap<String, Set<Jwk>> jwksCache = new ConcurrentHashMap<>();
 
-    public Jwk getFilteredJwk(String idToken, String nonce, String platform) {
+    public Jwk getFilteredJwk(String idToken, OAuth2RestDto.TokenRequest request) {
         String[] tokenArr = idToken.split("\\.");
         String header = tokenArr[0];
         String payload = tokenArr[1];
 
         // 서명 검증 전 페이로드 부분만 따로 유효성 검사
-        boolean isValidPayload = checkUnsignedPayload(payload, nonce, platform);
+        boolean isValidPayload = checkUnsignedPayload(payload, request);
         if (!isValidPayload) {
             throw new IllegalStateException("유효하지 않은 id token Payload");
         }
 
         // OIDC 프로바이더로부터 jwks_uri 조회
-        String jwksUri = requestJwksUri(platform);
+        String jwksUri = requestJwksUri(request.getPlatform());
 
         // jwk 필터링 시도 횟수
         int retryFilterCnt = 0;
@@ -131,7 +132,7 @@ public class OIDCUtil {
         return oidcResDto.getKeys();
     }
 
-    private boolean checkUnsignedPayload(String payload, String nonce, String platform) {
+    private boolean checkUnsignedPayload(String payload, OAuth2RestDto.TokenRequest request) {
         byte[] decodedBytes = Base64.getUrlDecoder().decode(payload);
         ObjectMapper objectMapper = new ObjectMapper();
         IdTokenDto.Payload idTokenPayload;
@@ -141,15 +142,28 @@ public class OIDCUtil {
             throw new IllegalStateException("id token Payload 파싱 실패");
         }
 
-        String iss = socialInfoProvider.getOidcIss(platform);
-        String aud = socialInfoProvider.getClientId(platform);
+        String iss = socialInfoProvider.getOidcIss(request.getPlatform());
+        String aud = socialInfoProvider.getClientId(request.getPlatform());
+
+        long curSec = System.currentTimeMillis() / 1000;
 
         boolean isValidIss = idTokenPayload.getIss().equals(iss);
         boolean isValidAud = idTokenPayload.getAud().equals(aud);
-        boolean isValidExp = idTokenPayload.getExp() > System.currentTimeMillis() / 1000;
-        boolean isValidNonce = idTokenPayload.getNonce().equals(nonce);
+        boolean isValidExp = idTokenPayload.getExp() > curSec;
+        boolean isValidIat = false;
 
-        return isValidIss && isValidAud && isValidExp && isValidNonce;
+        if (idTokenPayload.getIat() != null) {
+            final long MAX_AGE_SEC = 600;  // 발급 10분 지나면 무효
+            long tokenAge = curSec - idTokenPayload.getIat();
+            isValidIat = tokenAge >= 0 && tokenAge < MAX_AGE_SEC;
+        }
+
+        boolean isValidNonce = true;
+        if (!request.getPlatform().equals("naver")) {
+            isValidNonce = idTokenPayload.getNonce().equals(request.getNonce());
+        }
+
+        return isValidIss && isValidAud && isValidExp && isValidIat && isValidNonce;
     }
 
     private Jwk filterJwk(String header, Set<Jwk> jwks, int retryCnt) {
@@ -159,7 +173,7 @@ public class OIDCUtil {
 
         // 헤더의 kid, alg와 일치하는 jwk 추출
         return jwks.stream()
-                .filter(key -> key.getKid().equals(idTokenHeader.getKid()) && key.getAlg().equals(idTokenHeader.getAlg()))
+                .filter(key -> key.getKid().equals(idTokenHeader.getKid()))
                 .findFirst()
                 .orElseGet(() -> {
                     if (retryCnt == 0) {

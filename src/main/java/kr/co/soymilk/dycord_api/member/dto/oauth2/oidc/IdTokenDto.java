@@ -30,6 +30,7 @@ public class IdTokenDto {
         private String sub;
         private Long iat;
         private Long exp;
+        private String jti;
 
         private Long auth_time;
 

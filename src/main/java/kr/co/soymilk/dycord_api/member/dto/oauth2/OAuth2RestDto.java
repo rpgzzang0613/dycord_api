@@ -19,6 +19,7 @@ public class OAuth2RestDto {
         // 모든 소셜 공통
         private String code;
         private String platform;
+        private String codeVerifier;
 
         // 카카오, 구글 공통
         private String nonce;
