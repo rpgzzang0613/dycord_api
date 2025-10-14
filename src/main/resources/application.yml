@@ -22,6 +22,37 @@ spring:
 #        use_sql_comments: true
 #  datasource:
 #    driver-class-name: org.mariadb.jdbc.Driver
+
+social:
+  google:
+    client-id: 665413461546-l96bb7do18dnaipaekn0tjrav051ghj9.apps.googleusercontent.com
+    redirect-uri: http://localhost:3636/auth/callback/google
+    token-uri: https://oauth2.googleapis.com/token
+    oidc:
+      iss: https://accounts.google.com
+      meta-uri: https://accounts.google.com/.well-known/openid-configuration
+  kakao:
+    client-id: c3e59e084475b40146f139e7c9abdcc4
+    redirect-uri: http://localhost:3636/auth/callback/kakao
+    token-uri: https://kauth.kakao.com/oauth/token
+    oidc:
+      iss: https://kauth.kakao.com
+      meta-uri: https://kauth.kakao.com/.well-known/openid-configuration
+  naver:
+    client-id: RR7luU5avubsBUe9AfC8
+    redirect-uri: http://localhost:3636/auth/callback/naver
+    token-uri: https://nid.naver.com/oauth2/token
+    profile-uri: https://openapi.naver.com/v1/nid/me
+    oidc:
+      iss: https://nid.naver.com
+      meta-uri: https://nid.naver.com/.well-known/openid-configuration
+  twitch:
+    client-id: 8ug3037rjlvqwvgx3j51p490e82qlg
+    redirect-uri: http://localhost:3636/auth/callback/twitch
+    token-uri: https://id.twitch.tv/oauth2/token
+    oidc:
+      iss: https://id.twitch.tv/oauth2
+      meta-uri: https://id.twitch.tv/oauth2/.well-known/openid-configuration
 ---
 
 # dev config
