@@ -1,7 +1,7 @@
 package kr.co.soymilk.dycord_api.common.config;
 
 import kr.co.soymilk.dycord_api.common.util.OSType;
-import kr.co.soymilk.dycord_api.common.util.ServerUtil;
+import kr.co.soymilk.dycord_api.common.util.ServerInfoUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.hc.client5.http.classic.HttpClient;
 import org.apache.hc.client5.http.config.ConnectionConfig;
@@ -38,7 +38,7 @@ public class RestClientConfig {
                 .setDefaultRequestConfig(requestConfig())
                 .evictExpiredConnections();
 
-        if (ServerUtil.getOsType() == OSType.LINUX) {
+        if (ServerInfoUtil.getOsType() == OSType.LINUX) {
             builder.evictIdleConnections(TimeValue.of(20, TimeUnit.SECONDS));
         }
 
@@ -48,7 +48,7 @@ public class RestClientConfig {
     private RequestConfig requestConfig() {
         RequestConfig.Builder builder = RequestConfig.custom();
 
-        if (ServerUtil.getOsType() == OSType.LINUX) {
+        if (ServerInfoUtil.getOsType() == OSType.LINUX) {
             builder.setConnectionRequestTimeout(20, TimeUnit.SECONDS)
                     .setResponseTimeout(20, TimeUnit.SECONDS);
         }
@@ -67,7 +67,7 @@ public class RestClientConfig {
     private ConnectionConfig connectionConfig() {
         ConnectionConfig.Builder builder = ConnectionConfig.custom();
 
-        if (ServerUtil.getOsType() == OSType.LINUX) {
+        if (ServerInfoUtil.getOsType() == OSType.LINUX) {
             builder.setConnectTimeout(20, TimeUnit.SECONDS)
                     .setSocketTimeout(20, TimeUnit.SECONDS);
         }

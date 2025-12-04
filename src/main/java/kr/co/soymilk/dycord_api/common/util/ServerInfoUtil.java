@@ -6,7 +6,7 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 
 @Slf4j
-public final class ServerUtil {
+public final class ServerInfoUtil {
 
     public static String getHostName() {
         String hostName = "";

@@ -39,36 +39,34 @@ public class OAuth2ProfileProvider {
                 .uri(uri)
                 .header("Authorization", "Bearer " + accessToken)
                 .accept(MediaType.APPLICATION_JSON)
-                .exchange((request, response) -> {
+                .retrieve()
+                .onStatus(HttpStatusCode::isError, (request, response) -> {
                     HttpStatusCode httpStatusCode = response.getStatusCode();
                     ObjectMapper objectMapper = new ObjectMapper();
                     NaverRestDto.ProfileResponse naverProfileResDto = objectMapper.readValue(response.getBody(), new TypeReference<>() {});
 
-                    if (httpStatusCode.isError()) {
-                        if (naverProfileResDto != null && !"00".equals(naverProfileResDto.getResultcode())) {
-                            // 네이버에서 에러를 반환한 경우
-                            OAuth2RestDto.ErrorResponse errResDto = new OAuth2RestDto.ErrorResponse();
-                            errResDto.setError(naverProfileResDto.getResultcode());
-                            errResDto.setError_description(naverProfileResDto.getMessage());
+                    if (naverProfileResDto != null && !"00".equals(naverProfileResDto.getResultcode())) {
+                        // 네이버에서 에러를 반환한 경우
+                        OAuth2RestDto.ErrorResponse errResDto = new OAuth2RestDto.ErrorResponse();
+                        errResDto.setError(naverProfileResDto.getResultcode());
+                        errResDto.setError_description(naverProfileResDto.getMessage());
 
-                            if (httpStatusCode.is4xxClientError()) {
-                                throw new HttpClientErrorException(httpStatusCode, errResDto.toJsonString());
-                            } else {
-                                throw new HttpServerErrorException(httpStatusCode, errResDto.toJsonString());
-                            }
-
+                        if (httpStatusCode.is4xxClientError()) {
+                            throw new HttpClientErrorException(httpStatusCode, errResDto.toJsonString());
                         } else {
-                            // 예기치 못한 에러일때
-                            if (httpStatusCode.is4xxClientError()) {
-                                throw new HttpClientErrorException(httpStatusCode, response.getStatusText());
-                            } else {
-                                throw new HttpServerErrorException(httpStatusCode, response.getStatusText());
-                            }
+                            throw new HttpServerErrorException(httpStatusCode, errResDto.toJsonString());
+                        }
+
+                    } else {
+                        // 예기치 못한 에러일때
+                        if (httpStatusCode.is4xxClientError()) {
+                            throw new HttpClientErrorException(httpStatusCode, response.getStatusText());
+                        } else {
+                            throw new HttpServerErrorException(httpStatusCode, response.getStatusText());
                         }
                     }
-
-                    return naverProfileResDto;
-                });
+                })
+                .body(NaverRestDto.ProfileResponse.class);
     }
 
 }

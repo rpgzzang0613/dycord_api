@@ -8,7 +8,7 @@ import kr.co.soymilk.dycord_api.member.dto.oauth2.oidc.Jwk;
 import kr.co.soymilk.dycord_api.member.dto.oauth2.oidc.OIDCProfile;
 import kr.co.soymilk.dycord_api.member.util.OAuth2ProfileProvider;
 import kr.co.soymilk.dycord_api.member.util.OAuth2TokenProvider;
-import kr.co.soymilk.dycord_api.member.util.OIDCUtil;
+import kr.co.soymilk.dycord_api.member.util.OIDCAuthManager;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -18,17 +18,17 @@ public class OAuth2Service {
 
     private final OAuth2TokenProvider oAuth2TokenProvider;
     private final OAuth2ProfileProvider oAuth2ProfileProvider;
-    private final OIDCUtil oidcUtil;
+    private final OIDCAuthManager oidcAuthManager;
 
     public OIDCProfile processAuthByOIDC(OAuth2RestDto.TokenRequest request) {
         // 프론트단으로부터 전달받은 code로 OIDC Provider(구글, 카카오)에 토큰 요청
         OAuth2RestDto.TokenResponse tokenRes = oAuth2TokenProvider.requestOAuth2TokenByCode(request);
 
         // id token 검증에 사용할 jwk 조회
-        Jwk jwk = oidcUtil.getFilteredJwk(tokenRes.getId_token(), request);
+        Jwk jwk = oidcAuthManager.getFilteredJwk(tokenRes.getId_token(), request);
 
         // id token을 검증하고 토큰의 데이터를 꺼낼 수 있는 형태로 추출
-        Claims payload = oidcUtil.validateAndExtractIdToken(tokenRes.getId_token(), jwk);
+        Claims payload = oidcAuthManager.validateAndExtractIdToken(tokenRes.getId_token(), jwk);
 
         OIDCProfile profile;
         if (request.getPlatform().equals("naver")) {

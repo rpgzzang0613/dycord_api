@@ -31,7 +31,7 @@ import java.util.concurrent.ConcurrentMap;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class OIDCUtil {
+public class OIDCAuthManager {
 
     private final RestClient restClient;
     private final SocialInfoProvider socialInfoProvider;
@@ -80,10 +80,11 @@ public class OIDCUtil {
         // 요청 및 메타데이터 응답 반환
         OIDCRestDto.MetaDataResponse metaRes = restClient.get()
                 .uri(uri)
+                .accept(MediaType.APPLICATION_JSON)
                 .retrieve()
-                .onStatus(HttpStatusCode::isError, ((request, response) -> {
+                .onStatus(HttpStatusCode::isError, (request, response) -> {
                     throw new HttpServerErrorException(response.getStatusCode(), "Cannot get jwks_uri");
-                }))
+                })
                 .body(OIDCRestDto.MetaDataResponse.class);
 
         if (metaRes == null) {
