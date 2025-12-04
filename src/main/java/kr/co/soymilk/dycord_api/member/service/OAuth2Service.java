@@ -21,7 +21,7 @@ public class OAuth2Service {
     private final OIDCAuthManager oidcAuthManager;
 
     public OIDCProfile processAuthByOIDC(OAuth2RestDto.TokenRequest request) {
-        // 프론트단으로부터 전달받은 code로 OIDC Provider(구글, 카카오)에 토큰 요청
+        // 프론트단으로부터 전달받은 code로 OIDC Provider에 토큰 요청
         OAuth2RestDto.TokenResponse tokenRes = oAuth2TokenProvider.requestOAuth2TokenByCode(request);
 
         // id token 검증에 사용할 jwk 조회
