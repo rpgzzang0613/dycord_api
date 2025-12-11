@@ -21,6 +21,7 @@ public class OAuth2TokenProvider {
 
     private final RestClient restClient;
     private final SocialInfoProvider socialInfoProvider;
+    private final ObjectMapper objectMapper;
 
     public OAuth2RestDto.TokenResponse requestOAuth2TokenByCode(OAuth2RestDto.TokenRequest authRequest) {
         // body 세팅 (content-type: x-www-form-urlencoded 이므로 MultiValueMap에 담아 전달)
@@ -55,7 +56,6 @@ public class OAuth2TokenProvider {
                     // Http 응답 코드가 2xx가 아닐 경우 실행되는 함수
                     HttpStatusCode httpStatusCode = response.getStatusCode();
 
-                    ObjectMapper objectMapper = new ObjectMapper();
                     OAuth2RestDto.ErrorResponse errResDto = objectMapper.readValue(response.getBody(), new TypeReference<>() {});
 
                     if (httpStatusCode.is4xxClientError()) {

@@ -36,6 +36,8 @@ public class OIDCAuthManager {
     private final RestClient restClient;
     private final SocialInfoProvider socialInfoProvider;
 
+    private final ObjectMapper objectMapper;
+
     private final ConcurrentMap<String, Set<Jwk>> jwksCache = new ConcurrentHashMap<>();
 
     public Jwk getFilteredJwk(String idToken, OAuth2RestDto.TokenRequest request) {
@@ -135,8 +137,8 @@ public class OIDCAuthManager {
 
     private boolean checkUnsignedPayload(String payload, OAuth2RestDto.TokenRequest request) {
         byte[] decodedBytes = Base64.getUrlDecoder().decode(payload);
-        ObjectMapper objectMapper = new ObjectMapper();
         IdTokenDto.Payload idTokenPayload;
+
         try {
             idTokenPayload = objectMapper.readValue(decodedBytes, IdTokenDto.Payload.class);
         } catch (IOException e) {
@@ -192,7 +194,6 @@ public class OIDCAuthManager {
 
         IdTokenDto.Header idTokenHeader;
         try {
-            ObjectMapper objectMapper = new ObjectMapper();
             idTokenHeader = objectMapper.readValue(decodedHeaderBytes, IdTokenDto.Header.class);
         } catch (IOException e) {
             idTokenHeader = null;

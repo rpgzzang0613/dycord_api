@@ -22,6 +22,7 @@ public class OAuth2ProfileProvider {
 
     private final RestClient restClient;
     private final SocialInfoProvider socialInfoProvider;
+    private final ObjectMapper objectMapper;
 
     public OIDCProfile getProfileFromIdToken(Claims payload) {
         return OIDCProfile.builder()
@@ -42,7 +43,6 @@ public class OAuth2ProfileProvider {
                 .retrieve()
                 .onStatus(HttpStatusCode::isError, (request, response) -> {
                     HttpStatusCode httpStatusCode = response.getStatusCode();
-                    ObjectMapper objectMapper = new ObjectMapper();
                     NaverRestDto.ProfileResponse naverProfileResDto = objectMapper.readValue(response.getBody(), new TypeReference<>() {});
 
                     if (naverProfileResDto != null && !"00".equals(naverProfileResDto.getResultcode())) {
