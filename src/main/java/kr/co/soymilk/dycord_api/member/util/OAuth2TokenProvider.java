@@ -14,6 +14,8 @@ import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.RestClient;
 
+import java.util.Collections;
+
 @Slf4j
 @Component
 @RequiredArgsConstructor
@@ -48,8 +50,10 @@ public class OAuth2TokenProvider {
         // 요청 및 결과 반환
         return restClient.post()
                 .uri(requestUri)
-                .contentType(MediaType.APPLICATION_FORM_URLENCODED)
-                .accept(MediaType.APPLICATION_JSON)
+                .headers(headers -> {
+                    headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+                    headers.setAccept(Collections.singletonList(MediaType.APPLICATION_JSON));
+                })
                 .body(requestMap)
                 .retrieve()
                 .onStatus(HttpStatusCode::isError, (request, response) -> {

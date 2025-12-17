@@ -15,6 +15,8 @@ import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.RestClient;
 
+import java.util.Collections;
+
 @Slf4j
 @Component
 @RequiredArgsConstructor
@@ -38,8 +40,10 @@ public class OAuth2ProfileProvider {
         // 요청 및 결과 반환
         return restClient.get()
                 .uri(uri)
-                .header("Authorization", "Bearer " + accessToken)
-                .accept(MediaType.APPLICATION_JSON)
+                .headers(headers -> {
+                    headers.setBearerAuth(accessToken);
+                    headers.setAccept(Collections.singletonList(MediaType.APPLICATION_JSON));
+                })
                 .retrieve()
                 .onStatus(HttpStatusCode::isError, (request, response) -> {
                     HttpStatusCode httpStatusCode = response.getStatusCode();

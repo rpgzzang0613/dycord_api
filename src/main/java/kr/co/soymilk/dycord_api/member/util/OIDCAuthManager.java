@@ -23,6 +23,7 @@ import java.security.PublicKey;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.RSAPublicKeySpec;
 import java.util.Base64;
+import java.util.Collections;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -82,7 +83,7 @@ public class OIDCAuthManager {
         // 요청 및 메타데이터 응답 반환
         OIDCRestDto.MetaDataResponse metaRes = restClient.get()
                 .uri(uri)
-                .accept(MediaType.APPLICATION_JSON)
+                .headers(headers -> headers.setAccept(Collections.singletonList(MediaType.APPLICATION_JSON)))
                 .retrieve()
                 .onStatus(HttpStatusCode::isError, (request, response) -> {
                     throw new HttpServerErrorException(response.getStatusCode(), "Cannot get jwks_uri");
